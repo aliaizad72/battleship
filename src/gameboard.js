@@ -1,5 +1,6 @@
 export default class Gameboard {
   #ships = [];
+  #shots = [];
 
   #endCoords(ship, startX, startY) {
     const coords = [startX, startY];
@@ -42,16 +43,29 @@ export default class Gameboard {
     return valid;
   }
 
+  #endCoordsValid(ship, startCoords, endCoords) {
+    return this.#coordsInArray(
+      this.#validEnd(ship, startCoords[0], startCoords[1]),
+      endCoords
+    );
+  }
+
+  #squareOccupied(coords) {
+    return this.#coordsInArray(this.#occupiedCoords(), coords);
+  }
+
   #pathOccupied(path) {
     let result = false;
     path.forEach((coords) => {
-      if (
-        JSON.stringify(this.#occupiedCoords()).includes(JSON.stringify(coords))
-      ) {
+      if (this.#coordsInArray(this.#occupiedCoords(), coords)) {
         result = true;
       }
     });
     return result;
+  }
+
+  #coordsInArray(arr, coords) {
+    return JSON.stringify(arr).includes(JSON.stringify(coords));
   }
 
   #occupiedCoords() {
@@ -84,14 +98,57 @@ export default class Gameboard {
     return path;
   }
 
+  #findShip(coords) {
+    return this.#ships.find((ship) => {
+      return this.#coordsInArray(ship.coords, coords);
+    }).ship;
+  }
+
+  isValid(ship, startCoords, endCoords) {
+    if (
+      this.#squareOccupied(startCoords) ||
+      !this.#endCoordsValid(ship, startCoords, endCoords)
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
   addShip(ship, startCoords, endCoords) {
-    this.#ships.push({
-      ship,
-      coords: this.#coordsPath(startCoords, endCoords),
-    });
+    if (this.isValid(ship, startCoords, endCoords)) {
+      this.#ships.push({
+        ship,
+        coords: this.#coordsPath(startCoords, endCoords),
+      });
+    }
+  }
+
+  receiveAttack(coords) {
+    // coords not shot yet
+    if (!this.#coordsInArray(this.#shots, coords)) {
+      if (this.#squareOccupied(coords)) {
+        this.#findShip(coords).hit();
+      }
+      this.#shots.push(coords);
+    }
+  }
+
+  allSunk() {
+    return this.#ships.map((obj) => obj.ship.sunk).every((bool) => bool);
   }
 
   get ships() {
     return this.#ships;
+  }
+
+  get shots() {
+    return this.#shots;
+  }
+
+  get missed() {
+    return this.#shots.filter((shot) => {
+      return !this.#coordsInArray(this.#occupiedCoords(), shot);
+    });
   }
 }
