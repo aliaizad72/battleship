@@ -42,6 +42,5 @@ test("missed will return missed shots", () => {
 test("allSunk will return true if all ships are sunk", () => {
   gameboard.receiveAttack([0, 1]);
   gameboard.receiveAttack([0, 2]);
-  console.log(gameboard.allSunk());
-  // expect(gameboard.allSunk()).toBe(true);
+  expect(gameboard.allSunk()).toBe(true);
 });
