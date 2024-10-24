@@ -5,8 +5,8 @@ import Player from "./player";
 export default class Game {
   #players = [];
   constructor() {
-    const player = new Player();
-    const computer = new Player();
+    const player = new Player("player");
+    const computer = new Player("computer");
     player.defaultPlayerShips();
     computer.defaultComputerShips();
     this.#players.push(player, computer);

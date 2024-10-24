@@ -4,7 +4,9 @@ import Ship from "./ship";
 export default class Player {
   #gameboard = new Gameboard();
 
-  constructor() {}
+  constructor(name) {
+    this.name = name;
+  }
 
   defaultPlayerShips() {
     this.#gameboard.addShip(new Ship("Carrier", 5), [0, 0], [0, 4]);

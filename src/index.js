@@ -3,28 +3,56 @@ import Game from "./game";
 
 const game = new Game();
 game.players.forEach((player) => {
-  console.log(player.gameboard);
+  createBoard(player);
+  // addShipsToBoard(player);
 });
 
-function createBoard() {
-  const board = document.createElement("div");
-  for (let i = 0; i < 10; i++) {
-    const rows = document.createElement("div");
-    for (let j = 0; j < 10; j++) {
-      const cols = document.createElement("div");
-      cols.className = "border-r border-black w-full";
-      if (j === 9) {
-        cols.classList.remove("border-r");
-      }
-      rows.appendChild(cols);
+//create gameboard element and assign an id of player
+function createBoard(player) {
+  const grid = document.createElement("div");
+  grid.id = player.name;
+  grid.className = "w-[450px] grid grid-cols-10 grid-rows-10 mx-auto my-4";
+
+  for (let i = 0; i < 100; i++) {
+    const square = document.createElement("div");
+    square.dataset.coords = `${strCoords(i)}`.split("");
+    square.className = "border border-blue-300 h-10";
+
+    if (i % 10 !== 0) {
+      square.classList.add("border-l-0");
     }
-    rows.className = "flex border-t-0 border border-black h-10 w-1/2 mx-auto";
-    if (i === 0) {
-      rows.classList.remove("border-t-0");
+
+    if (100 - i > 10) {
+      square.classList.add("border-b-0");
     }
-    board.appendChild(rows);
+
+    grid.appendChild(square);
   }
-  document.body.appendChild(board);
+  document.body.appendChild(grid);
 }
 
-document.body.onload = createBoard;
+function strCoords(num) {
+  if (num < 10) {
+    return "0" + num;
+  }
+
+  return num;
+}
+
+function addShipsToBoard(player) {
+  player.gameboard.ships.forEach((ship) => {
+    for (let i = 0; i < ship.coords.length; i++) {
+      const [x, y] = ship.coords[i];
+      const shipDiv = square(player, x, y);
+      // shipDiv.classList.remove("border-r");
+      // shipDiv.classList.add("bg-blue-50");
+      console.log(shipDiv.parentElement);
+      console.log(shipDiv);
+    }
+  });
+}
+
+function square(player, x, y) {
+  const boardArr = [...document.getElementById(player.name).children];
+  return [...boardArr[x].children][y];
+}
