@@ -147,8 +147,16 @@ function createShip(obj, i) {
 	const [r, c] = obj.coords[0];
 
 	shipDiv.className = `bg-blue-950 border border-blue-300 absolute hover:cursor-move ship`;
-	shipDiv.style.height = `${squareW}px`;
-	shipDiv.style.width = `${obj.ship.length * squareW}px`;
+	console.log(obj.ship.direction);
+
+	if (obj.ship.direction === "horizontal") {
+		shipDiv.style.height = `${squareW}px`;
+		shipDiv.style.width = `${obj.ship.length * squareW}px`;
+	} else if (obj.ship.direction === "vertical") {
+		shipDiv.style.width = `${squareW}px`;
+		shipDiv.style.height = `${obj.ship.length * squareW}px`;
+	}
+
 	shipDiv.style.left = `${c * squareW}px`;
 	shipDiv.style.top = `${r * squareW}px`;
 	shipDiv.id = `${player.name}-ship-${i}`;
