@@ -9,7 +9,7 @@ createShip(player);
 //create gameboard element and assign an id of player
 function createBoard(player) {
   const gridContainer = document.createElement("div");
-  gridContainer.className = "w-[450px] mx-auto my-4 relative";
+  gridContainer.className = "w-[450px] mx-auto my-4 relative container";
   const grid = document.createElement("div");
   grid.id = player.name;
   grid.className = "grid grid-cols-10 grid-rows-10";
@@ -17,7 +17,8 @@ function createBoard(player) {
   for (let i = 0; i < 100; i++) {
     const square = document.createElement("div");
     square.dataset.coords = `${strCoords(i)}`.split("");
-    square.className = "border border-blue-300 h-10";
+    //h-10 === 40px
+    square.className = `border border-blue-300 h-[45px] square`;
 
     if (i % 10 !== 0) {
       square.classList.add("border-l-0");
@@ -44,9 +45,62 @@ function strCoords(num) {
 function createShip(player) {
   const shipDiv = document.createElement("div");
   shipDiv.className =
-    "w-1/2 border-2 bg-gray-50 border-black h-10 absolute top-10 hover:cursor-move";
+    "w-[225px] border-2 bg-gray-50 border-black h-[45px] absolute top-[45px] hover:cursor-move";
   shipDiv.draggable = true;
+  shipDiv.id = `${player.name}-ship-0`;
+  shipDiv.addEventListener("dragstart", (event) => {
+    event.dataTransfer.setData("draggable", event.target.id);
+    event.dataTransfer.setData("x", event.clientX);
+    event.dataTransfer.setData("y", event.clientY);
+    event.dataTransfer.setData("startSquare", getSquareFromDrag(event));
+  });
   document.getElementById(player.name).parentElement.appendChild(shipDiv);
+}
+
+document.querySelector(".container").addEventListener("dragover", (event) => {
+  event.preventDefault();
+});
+
+document.querySelector(".container").addEventListener("drop", (event) => {
+  event.preventDefault();
+  const startSquare = event.dataTransfer.getData("startSquare");
+  const endSquare = getSquareFromDrag(event);
+  const squaresMoved = moveVector(startSquare, endSquare);
+  const ship = document.getElementById(event.dataTransfer.getData("draggable"));
+  translateShip(ship, squaresMoved);
+});
+
+function getTranslateVals(element) {
+  const style = window.getComputedStyle(element);
+  const matrix = new DOMMatrixReadOnly(style.transform);
+  return {
+    x: matrix.m41,
+    y: matrix.m42,
+  };
+}
+
+function getSquareFromDrag(event) {
+  return document
+    .elementsFromPoint(event.clientX, event.clientY)
+    .find((e) => e.classList.contains("square")).dataset.coords;
+}
+
+function strToCoords(str) {
+  return str.split(",").map((coord) => Number(coord));
+}
+
+function moveVector(startSquare, endSquare) {
+  const [x1, y1] = strToCoords(startSquare);
+  const [x2, y2] = strToCoords(endSquare);
+  return [x2 - x1, y2 - y1];
+}
+
+function translateShip(ship, moveVector) {
+  const shipPos = getTranslateVals(ship);
+  const [dy, dx] = moveVector;
+  ship.style.transform = `translate(${shipPos.x + dx * 45}px, ${
+    shipPos.y + dy * 45
+  }px)`;
 }
 
 // function addShipsToBoard(player) {
