@@ -12,15 +12,19 @@ addShipsToBoard(player);
 // w and h of each grid squares = 45px
 function createBoard(player) {
   const gridContainer = document.createElement("div");
-  gridContainer.className = `w-[${gridW}px] mx-auto my-4 relative container`;
+  gridContainer.className = `mx-auto relative grid-container`;
+  gridContainer.style.width = `${gridW}px`;
+
   const grid = document.createElement("div");
   grid.id = player.name;
-  grid.className = "grid grid-cols-10 grid-rows-10";
+  grid.className = "grid";
+  grid.style.gridTemplateColumns = `repeat(10, ${squareW}px)`;
+  grid.style.gridTemplateRows = `repeat(10, ${squareW}px)`;
 
   for (let i = 0; i < 100; i++) {
     const square = document.createElement("div");
     square.dataset.coords = `${strCoords(i)}`.split("");
-    square.className = `border bg-blue-100 border-blue-300 h-[${squareW}px] square`;
+    square.className = `border-2 bg-blue-100 border-blue-300 square`;
 
     if (i % 10 !== 0) {
       square.classList.add("border-l-0");
@@ -53,8 +57,9 @@ function strCoords(num) {
 function createShip(obj, i) {
   const shipDiv = document.createElement("div");
   const [r, c] = obj.coords[0];
-  shipDiv.className = `bg-blue-950 h-[40px] absolute hover:cursor-move`;
-  shipDiv.style.width = `${obj.ship.length * 40}px`;
+  shipDiv.className = `bg-blue-950 border border-blue-300 absolute hover:cursor-move ship`;
+  shipDiv.style.height = `${squareW}px`;
+  shipDiv.style.width = `${obj.ship.length * squareW}px`;
   shipDiv.style.left = `${c * squareW}px`;
   shipDiv.style.top = `${r * squareW}px`;
   shipDiv.draggable = true;
@@ -66,30 +71,51 @@ function createShip(obj, i) {
   document.getElementById(player.name).parentElement.appendChild(shipDiv);
 }
 
-document.querySelector(".container").addEventListener("dragover", (event) => {
-  event.preventDefault();
-});
+document
+  .querySelector(".grid-container")
+  .addEventListener("dragover", (event) => {
+    event.preventDefault();
+  });
 
-document.querySelector(".container").addEventListener("drop", (event) => {
+document.querySelector(".grid-container").addEventListener("drop", (event) => {
   event.preventDefault();
-  console.log(document.elementsFromPoint(event.clientX, event.clientY));
   const startSquare = event.dataTransfer.getData("startSquare");
   const endSquare = getSquareFromDrag(event);
   const squaresMoved = moveVector(startSquare, endSquare);
   const ship = document.getElementById(event.dataTransfer.getData("draggable"));
   const leftBound = document
-    .querySelector(".container")
+    .querySelector(".grid-container")
     .getBoundingClientRect().left;
   const rightBound = document
-    .querySelector(".container")
+    .querySelector(".grid-container")
     .getBoundingClientRect().right;
   const beforeTranslatePos = getTranslateVals(ship);
   translateShip(ship, squaresMoved);
   const shipAbsPos = ship.getBoundingClientRect();
-  if (shipAbsPos.left < leftBound || shipAbsPos.right > rightBound) {
-    ship.style.transform = `translate(${beforeTranslatePos.x}px, 0)`;
+  // +1 to offset weird pixelation of ships length 3
+  if (
+    shipAbsPos.left < leftBound ||
+    shipAbsPos.right > rightBound + 1 ||
+    isOverlapped(ship)
+  ) {
+    ship.style.transform = `translate(${beforeTranslatePos.x}px, ${beforeTranslatePos.y}px)`;
   }
 });
+
+function isOverlapped(ship) {
+  const rect = ship.getBoundingClientRect();
+  const leftTop =
+    document
+      .elementsFromPoint(rect.left + 1, rect.top)
+      .filter((e) => e.classList.contains("ship")).length === 2;
+  const rightTop =
+    document
+      .elementsFromPoint(rect.right - 1, rect.top)
+      .filter((e) => e.classList.contains("ship")).length === 2;
+  // const rightBot = document.elementsFromPoint(rect.right - 1, rect.bottom - 1);
+  // const leftBot = document.elementsFromPoint(rect.left, rect.bottom - 1);
+  return leftTop || rightTop;
+}
 
 function getTranslateVals(element) {
   const style = window.getComputedStyle(element);
