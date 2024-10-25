@@ -53,7 +53,7 @@ function strCoords(num) {
 function createShip(obj, i) {
   const shipDiv = document.createElement("div");
   const [r, c] = obj.coords[0];
-  shipDiv.className = `bg-blue-950 h-[40px] absolute  hover:cursor-move`;
+  shipDiv.className = `bg-blue-950 h-[40px] absolute hover:cursor-move`;
   shipDiv.style.width = `${obj.ship.length * 40}px`;
   shipDiv.style.left = `${c * squareW}px`;
   shipDiv.style.top = `${r * squareW}px`;
@@ -61,8 +61,6 @@ function createShip(obj, i) {
   shipDiv.id = `${player.name}-ship-${i}`;
   shipDiv.addEventListener("dragstart", (event) => {
     event.dataTransfer.setData("draggable", event.target.id);
-    event.dataTransfer.setData("x", event.clientX);
-    event.dataTransfer.setData("y", event.clientY);
     event.dataTransfer.setData("startSquare", getSquareFromDrag(event));
   });
   document.getElementById(player.name).parentElement.appendChild(shipDiv);
@@ -74,11 +72,23 @@ document.querySelector(".container").addEventListener("dragover", (event) => {
 
 document.querySelector(".container").addEventListener("drop", (event) => {
   event.preventDefault();
+  console.log(document.elementsFromPoint(event.clientX, event.clientY));
   const startSquare = event.dataTransfer.getData("startSquare");
   const endSquare = getSquareFromDrag(event);
   const squaresMoved = moveVector(startSquare, endSquare);
   const ship = document.getElementById(event.dataTransfer.getData("draggable"));
+  const leftBound = document
+    .querySelector(".container")
+    .getBoundingClientRect().left;
+  const rightBound = document
+    .querySelector(".container")
+    .getBoundingClientRect().right;
+  const beforeTranslatePos = getTranslateVals(ship);
   translateShip(ship, squaresMoved);
+  const shipAbsPos = ship.getBoundingClientRect();
+  if (shipAbsPos.left < leftBound || shipAbsPos.right > rightBound) {
+    ship.style.transform = `translate(${beforeTranslatePos.x}px, 0)`;
+  }
 });
 
 function getTranslateVals(element) {
@@ -101,16 +111,15 @@ function strToCoords(str) {
 }
 
 function moveVector(startSquare, endSquare) {
-  const [x1, y1] = strToCoords(startSquare);
-  const [x2, y2] = strToCoords(endSquare);
-  return [x2 - x1, y2 - y1];
+  const [r1, c1] = strToCoords(startSquare);
+  const [r2, c2] = strToCoords(endSquare);
+  return [r2 - r1, c2 - c1];
 }
 
 function translateShip(ship, moveVector) {
   const shipPos = getTranslateVals(ship);
-  const [dy, dx] = moveVector;
-  console.log(shipPos, ship.offsetLeft);
-  ship.style.transform = `translate(${shipPos.x + dx * squareW}px, ${
-    shipPos.y + dy * squareW
+  const [dr, dc] = moveVector;
+  ship.style.transform = `translate(${shipPos.x + dc * squareW}px, ${
+    shipPos.y + dr * squareW
   }px)`;
 }
