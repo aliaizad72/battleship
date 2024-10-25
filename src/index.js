@@ -3,13 +3,16 @@ import Game from "./game";
 
 const game = new Game();
 const player = game.players[0];
+const gridW = 400;
+const squareW = gridW / 10;
 createBoard(player);
-createShip(player);
+addShipsToBoard(player);
 
 //create gameboard element and assign an id of player
+// w and h of each grid squares = 45px
 function createBoard(player) {
   const gridContainer = document.createElement("div");
-  gridContainer.className = "w-[450px] mx-auto my-4 relative container";
+  gridContainer.className = `w-[${gridW}px] mx-auto my-4 relative container`;
   const grid = document.createElement("div");
   grid.id = player.name;
   grid.className = "grid grid-cols-10 grid-rows-10";
@@ -17,8 +20,7 @@ function createBoard(player) {
   for (let i = 0; i < 100; i++) {
     const square = document.createElement("div");
     square.dataset.coords = `${strCoords(i)}`.split("");
-    //h-10 === 40px
-    square.className = `border border-blue-300 h-[45px] square`;
+    square.className = `border bg-blue-100 border-blue-300 h-[${squareW}px] square`;
 
     if (i % 10 !== 0) {
       square.classList.add("border-l-0");
@@ -34,6 +36,12 @@ function createBoard(player) {
   document.body.appendChild(gridContainer);
 }
 
+function addShipsToBoard(player) {
+  player.gameboard.ships.forEach((obj, i) => {
+    createShip(obj, i);
+  });
+}
+
 function strCoords(num) {
   if (num < 10) {
     return "0" + num;
@@ -42,12 +50,15 @@ function strCoords(num) {
   return num;
 }
 
-function createShip(player) {
+function createShip(obj, i) {
   const shipDiv = document.createElement("div");
-  shipDiv.className =
-    "w-[225px] border-2 bg-gray-50 border-black h-[45px] absolute top-[45px] hover:cursor-move";
+  const [r, c] = obj.coords[0];
+  shipDiv.className = `bg-blue-950 h-[40px] absolute  hover:cursor-move`;
+  shipDiv.style.width = `${obj.ship.length * 40}px`;
+  shipDiv.style.left = `${c * squareW}px`;
+  shipDiv.style.top = `${r * squareW}px`;
   shipDiv.draggable = true;
-  shipDiv.id = `${player.name}-ship-0`;
+  shipDiv.id = `${player.name}-ship-${i}`;
   shipDiv.addEventListener("dragstart", (event) => {
     event.dataTransfer.setData("draggable", event.target.id);
     event.dataTransfer.setData("x", event.clientX);
@@ -98,29 +109,8 @@ function moveVector(startSquare, endSquare) {
 function translateShip(ship, moveVector) {
   const shipPos = getTranslateVals(ship);
   const [dy, dx] = moveVector;
-  ship.style.transform = `translate(${shipPos.x + dx * 45}px, ${
-    shipPos.y + dy * 45
+  console.log(shipPos, ship.offsetLeft);
+  ship.style.transform = `translate(${shipPos.x + dx * squareW}px, ${
+    shipPos.y + dy * squareW
   }px)`;
-}
-
-// function addShipsToBoard(player) {
-//   player.gameboard.ships.forEach((ship) => {
-//     for (let i = 0; i < ship.coords.length; i++) {
-//       const [x, y] = ship.coords[i];
-//       const shipDiv = square(player, x, y);
-//       if (ship.direction === "horizontal") {
-//         shipDiv.classList.add("bg-blue-100", "border-2");
-//         if (i != ship.coords.length - 1) {
-//           shipDiv.classList.add("border-r-blue-100");
-//         }
-//       }
-//     }
-//   });
-// }
-
-function square(player, x, y) {
-  const boardArr = document.getElementById(player.name).children;
-  const index = Number(x.toString() + y.toString());
-  console.log(index);
-  return boardArr[index];
 }
