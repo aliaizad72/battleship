@@ -53,14 +53,6 @@ function gridDrop(e) {
 	//get ship element that was dragged
 	const ship = document.getElementById(e.dataTransfer.getData("draggable"));
 
-	//find the coords of left and right bound of grid
-	const leftBound = document
-		.querySelector(".grid-container")
-		.getBoundingClientRect().left;
-	const rightBound = document
-		.querySelector(".grid-container")
-		.getBoundingClientRect().right;
-
 	//in case move invalid, get coordinates to translate back to earlier pos
 	const beforeTranslate = getCoords(ship);
 
@@ -68,14 +60,18 @@ function gridDrop(e) {
 
 	// find abs position of ship after translation
 	const shipAbsPos = ship.getBoundingClientRect();
+	const gridRect = document
+		.querySelector(".grid-container")
+		.getBoundingClientRect();
 
-	// move back ship to original position if move invalid
-	if (
-		shipAbsPos.left < leftBound ||
+	const outOfBounds =
+		shipAbsPos.left < gridRect.left ||
 		// +1 to offset weird pixelation of ships length 3
-		shipAbsPos.right > rightBound + 1 ||
-		isOverlapped(ship)
-	) {
+		shipAbsPos.right > gridRect.right + 1 ||
+		shipAbsPos.top < gridRect.top ||
+		shipAbsPos.bottom > gridRect.bottom;
+	// move back ship to original position if move invalid
+	if (outOfBounds || isOverlapped(ship)) {
 		ship.style.transform = `translate(${beforeTranslate.x}px, ${beforeTranslate.y}px)`;
 	}
 }
@@ -115,18 +111,30 @@ function translateShip(ship, distance) {
 }
 
 function isOverlapped(ship) {
-	const rect = ship.getBoundingClientRect();
-	const leftTop =
-		document
-			.elementsFromPoint(rect.left + 1, rect.top)
-			.filter(e => e.classList.contains("ship")).length === 2;
-	const rightTop =
-		document
-			.elementsFromPoint(rect.right - 1, rect.top)
-			.filter(e => e.classList.contains("ship")).length === 2;
-	// const rightBot = document.elementsFromPoint(rect.right - 1, rect.bottom - 1);
-	// const leftBot = document.elementsFromPoint(rect.left, rect.bottom - 1);
-	return leftTop || rightTop;
+	const { left, top, right, bottom } = ship.getBoundingClientRect();
+	const width = Math.round(right - left);
+	const height = Math.round(bottom - top);
+	const colCount = width / squareW;
+	const rowCount = height / squareW;
+	const midX = left + squareW / 2;
+	const midY = top + squareW / 2;
+	const result = [];
+
+	const checkOverlap = (x, y) =>
+		document.elementsFromPoint(x, y).filter(e => e.classList.contains("ship"))
+			.length === 2;
+
+	if (rowCount === 1) {
+		for (let i = 0; i < colCount; i++) {
+			result.push(checkOverlap(midX + 40 * i, midY));
+		}
+	} else if (colCount === 1) {
+		for (let i = 0; i < rowCount; i++) {
+			result.push(checkOverlap(midX, midY + 40 * i));
+		}
+	}
+
+	return result.includes(true);
 }
 
 function strCoords(num) {
@@ -147,7 +155,6 @@ function createShip(obj, i) {
 	const [r, c] = obj.coords[0];
 
 	shipDiv.className = `bg-blue-950 border border-blue-300 absolute hover:cursor-move ship`;
-	console.log(obj.ship.direction);
 
 	if (obj.ship.direction === "horizontal") {
 		shipDiv.style.height = `${squareW}px`;
