@@ -60,6 +60,7 @@ function gridDrop(e) {
 
 	// find abs position of ship after translation
 	const shipAbsPos = ship.getBoundingClientRect();
+	const currentR = currentRotateVal(e.target);
 	const gridRect = document
 		.querySelector(".grid-container")
 		.getBoundingClientRect();
@@ -72,7 +73,7 @@ function gridDrop(e) {
 		shipAbsPos.bottom > gridRect.bottom;
 	// move back ship to original position if move invalid
 	if (outOfBounds || isOverlapped(ship)) {
-		ship.style.transform = `translate(${beforeTranslate.x}px, ${beforeTranslate.y}px)`;
+		ship.style.transform = `translate(${beforeTranslate.x}px, ${beforeTranslate.y}px) rotate(${currentR}px)`;
 	}
 }
 
@@ -105,9 +106,10 @@ function getCoords(element) {
 function translateShip(ship, distance) {
 	const shipPos = getCoords(ship);
 	const [dr, dc] = distance;
+	const currentR = currentRotateVal(ship);
 	ship.style.transform = `translate(${shipPos.x + dc * squareW}px, ${
 		shipPos.y + dr * squareW
-	}px)`;
+	}px) rotate(${currentR}deg)`;
 }
 
 function isOverlapped(ship) {
@@ -174,11 +176,16 @@ function createShip(obj, i) {
 	});
 
 	shipDiv.addEventListener("dblclick", e => {
-		const matrix = new DOMMatrix(getComputedStyle(e.target).transform);
-		const currentR = (Math.atan2(matrix.b, matrix.a) * 180) / Math.PI;
+		const { x, y } = getCoords(e.target);
+		const currentR = currentRotateVal(e.target);
 		const toRotate = currentR === 360 ? 0 : currentR + 90;
-		e.target.style.transform = `rotate(${toRotate}deg)`;
+		e.target.style.transform = `translate(${x}px, ${y}px) rotate(${toRotate}deg)`;
 	});
 
 	document.getElementById(player.name).parentElement.appendChild(shipDiv);
+}
+
+function currentRotateVal(element) {
+	const matrix = new DOMMatrix(getComputedStyle(element).transform);
+	return (Math.atan2(matrix.b, matrix.a) * 180) / Math.PI;
 }
