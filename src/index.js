@@ -111,9 +111,7 @@ function translateShip(ship, distance) {
 }
 
 function isOverlapped(ship) {
-	const { left, top, right, bottom } = ship.getBoundingClientRect();
-	const width = Math.round(right - left);
-	const height = Math.round(bottom - top);
+	const { width, height, left, top } = ship.getBoundingClientRect();
 	const colCount = width / squareW;
 	const rowCount = height / squareW;
 	const midX = left + squareW / 2;
@@ -167,11 +165,19 @@ function createShip(obj, i) {
 	shipDiv.style.left = `${c * squareW}px`;
 	shipDiv.style.top = `${r * squareW}px`;
 	shipDiv.id = `${player.name}-ship-${i}`;
-
+	shipDiv.style.transformOrigin = `${squareW / 2}px ${squareW / 2}px`;
 	shipDiv.draggable = true;
+
 	shipDiv.addEventListener("dragstart", e => {
 		e.dataTransfer.setData("draggable", e.target.id);
 		e.dataTransfer.setData("startSquare", getSquareFromDrag(e));
+	});
+
+	shipDiv.addEventListener("dblclick", e => {
+		const matrix = new DOMMatrix(getComputedStyle(e.target).transform);
+		const currentR = (Math.atan2(matrix.b, matrix.a) * 180) / Math.PI;
+		const toRotate = currentR === 360 ? 0 : currentR + 90;
+		e.target.style.transform = `rotate(${toRotate}deg)`;
 	});
 
 	document.getElementById(player.name).parentElement.appendChild(shipDiv);

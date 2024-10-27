@@ -9,7 +9,7 @@ export default class Player {
 	}
 
 	defaultPlayerShips() {
-		this.#gameboard.addShip(new Ship("Carrier", 5), [0, 0], [0, 4]);
+		this.#gameboard.addShip(new Ship("Carrier", 5), [4, 4], [4, 8]);
 		this.#gameboard.addShip(new Ship("Battleship", 4), [0, 9], [3, 9]);
 		this.#gameboard.addShip(new Ship("Cruiser", 3), [4, 0], [4, 2]);
 		this.#gameboard.addShip(new Ship("Submarine", 3), [6, 0], [6, 2]);
