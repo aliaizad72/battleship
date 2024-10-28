@@ -104,17 +104,6 @@ export default class Gameboard {
 		}).ship;
 	}
 
-	#findDirection(startCoords, endCoords) {
-		const [r1, c1] = startCoords;
-		const [r2, c2] = endCoords;
-
-		if (r1 === r2) {
-			return "horizontal";
-		} else if (c1 === c2) {
-			return "vertical";
-		}
-	}
-
 	isValid(ship, startCoords, endCoords) {
 		if (
 			this.#squareOccupied(startCoords) ||
@@ -128,7 +117,7 @@ export default class Gameboard {
 
 	addShip(ship, startCoords, endCoords) {
 		if (this.isValid(ship, startCoords, endCoords)) {
-			ship.direction = this.#findDirection(startCoords, endCoords);
+			ship.horizontal = startCoords[0] === endCoords[0];
 			this.#ships.push({
 				ship,
 				coords: this.#coordsPath(startCoords, endCoords),

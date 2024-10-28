@@ -6,3 +6,41 @@ html,
 body {
   height: 100%;
 }
+
+.shake-0 {
+  animation: shake-0 0.5s ease-in-out infinite;
+}
+
+@keyframes shake-0 {
+  10%, 90% {
+    transform: translateX(-10px);
+  }
+  20%, 80% {
+    transform: translateX(10px);
+  }
+  30%, 50%, 70% {
+    transform: translateX(-7px);
+  }
+  40%, 60% {
+    transform: translateX(7px);
+  }
+}
+
+.shake-90 {
+  animation: shake-90 0.5s ease-in-out infinite;
+}
+
+@keyframes shake-90 {
+  10%, 90% {
+    transform: translateY(-10px);
+  }
+  20%, 80% {
+    transform: translateY(10px);
+  }
+  30%, 50%, 70% {
+    transform: translateY(-7px);
+  }
+  40%, 60% {
+    transform: translateY(7px);
+  }
+}

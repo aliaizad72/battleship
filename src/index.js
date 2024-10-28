@@ -1,5 +1,18 @@
 import "./global.css";
 import Game from "./game";
+import battleship from "./images/battleship.png";
+import carrier from "./images/carrier.png";
+import cruiser from "./images/cruiser.png";
+import destroyer from "./images/destroyer.png";
+import submarine from "./images/submarine.png";
+
+const images = {
+	battleship,
+	carrier,
+	cruiser,
+	destroyer,
+	submarine,
+};
 
 const game = new Game();
 const player = game.players[0];
@@ -72,7 +85,15 @@ function gridDrop(e) {
 	// move back ship to original position if move invalid
 	if (outOfBounds || isOverlapped(ship)) {
 		ship.style.transform = `translate(${x}px, ${y}px) rotate(${currentR}deg)`;
+		// shakeShip(ship, currentR);
 	}
+}
+
+function shakeShip(ship, currentR) {
+	ship.classList.add(`shake-${currentR}`);
+	setTimeout(() => {
+		ship.classList.remove(`shake-${currentR}`);
+	}, 188);
 }
 
 //this function returns the square element where the pointer was when drag event ends
@@ -149,31 +170,30 @@ function addShipsToBoard(player) {
 }
 
 function createShip(obj, i) {
-	const shipDiv = document.createElement("div");
+	const ship = document.createElement("img");
 	const [r, c] = obj.coords[0];
 
-	shipDiv.className = `bg-blue-950 border border-blue-300 absolute hover:cursor-move ship`;
+	ship.className = `absolute hover:cursor-move ship`;
 
-	if (obj.ship.direction === "horizontal") {
-		shipDiv.style.height = `${squareW}px`;
-		shipDiv.style.width = `${obj.ship.length * squareW}px`;
-	} else if (obj.ship.direction === "vertical") {
-		shipDiv.style.width = `${squareW}px`;
-		shipDiv.style.height = `${obj.ship.length * squareW}px`;
+	ship.style.height = `${squareW}px`;
+	ship.style.width = `${obj.ship.length * squareW}px`;
+	if (!obj.ship.horizontal) {
+		ship.style.transform = `rotate(90deg)`;
 	}
 
-	shipDiv.style.left = `${c * squareW}px`;
-	shipDiv.style.top = `${r * squareW}px`;
-	shipDiv.id = `${player.name}-ship-${i}`;
-	shipDiv.style.transformOrigin = `${squareW / 2}px ${squareW / 2}px`;
-	shipDiv.draggable = true;
+	ship.style.left = `${c * squareW}px`;
+	ship.style.top = `${r * squareW}px`;
+	ship.id = `${player.name}-ship-${i}`;
+	ship.src = images[obj.ship.name];
+	ship.style.transformOrigin = `${squareW / 2}px ${squareW / 2}px`;
+	ship.draggable = true;
 
-	shipDiv.addEventListener("dragstart", e => {
+	ship.addEventListener("dragstart", e => {
 		e.dataTransfer.setData("draggable", e.target.id);
 		e.dataTransfer.setData("startSquare", getSquareFromDrag(e));
 	});
 
-	shipDiv.addEventListener("dblclick", e => {
+	ship.addEventListener("dblclick", e => {
 		const ship = e.target;
 		const { x, y } = getCoords(ship);
 		const currentR = currentRotateVal(ship);
@@ -191,7 +211,7 @@ function createShip(obj, i) {
 		}
 	});
 
-	document.getElementById(player.name).parentElement.appendChild(shipDiv);
+	document.getElementById(player.name).parentElement.appendChild(ship);
 }
 
 function currentRotateVal(element) {

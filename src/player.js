@@ -9,19 +9,19 @@ export default class Player {
 	}
 
 	defaultPlayerShips() {
-		this.#gameboard.addShip(new Ship("Carrier", 5), [4, 4], [4, 8]);
-		this.#gameboard.addShip(new Ship("Battleship", 4), [0, 9], [3, 9]);
-		this.#gameboard.addShip(new Ship("Cruiser", 3), [4, 0], [4, 2]);
-		this.#gameboard.addShip(new Ship("Submarine", 3), [6, 0], [6, 2]);
-		this.#gameboard.addShip(new Ship("Destroyer", 2), [8, 0], [8, 1]);
+		this.#gameboard.addShip(new Ship("carrier", 5), [4, 4], [4, 8]);
+		this.#gameboard.addShip(new Ship("battleship", 4), [0, 9], [3, 9]);
+		this.#gameboard.addShip(new Ship("cruiser", 3), [4, 0], [4, 2]);
+		this.#gameboard.addShip(new Ship("submarine", 3), [6, 0], [6, 2]);
+		this.#gameboard.addShip(new Ship("destroyer", 2), [8, 0], [8, 1]);
 	}
 
 	defaultComputerShips() {
-		this.#gameboard.addShip(new Ship("Carrier", 5), [9, 9], [5, 9]);
-		this.#gameboard.addShip(new Ship("Battleship", 4), [9, 8], [6, 8]);
-		this.#gameboard.addShip(new Ship("Cruiser", 3), [9, 7], [7, 7]);
-		this.#gameboard.addShip(new Ship("Submarine", 3), [9, 6], [7, 6]);
-		this.#gameboard.addShip(new Ship("Destroyer", 2), [9, 5], [8, 5]);
+		this.#gameboard.addShip(new Ship("carrier", 5), [9, 9], [5, 9]);
+		this.#gameboard.addShip(new Ship("battleship", 4), [9, 8], [6, 8]);
+		this.#gameboard.addShip(new Ship("cruiser", 3), [9, 7], [7, 7]);
+		this.#gameboard.addShip(new Ship("submarine", 3), [9, 6], [7, 6]);
+		this.#gameboard.addShip(new Ship("destroyer", 2), [9, 5], [8, 5]);
 	}
 
 	get gameboard() {
