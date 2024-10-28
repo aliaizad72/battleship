@@ -54,26 +54,24 @@ function gridDrop(e) {
 	const ship = document.getElementById(e.dataTransfer.getData("draggable"));
 
 	//in case move invalid, get coordinates to translate back to earlier pos
-	const beforeTranslate = getCoords(ship);
+	const { x, y } = getCoords(ship);
 
 	translateShip(ship, d);
 
 	// find abs position of ship after translation
-	const shipAbsPos = ship.getBoundingClientRect();
-	const currentR = currentRotateVal(e.target);
-	const gridRect = document
-		.querySelector(".grid-container")
-		.getBoundingClientRect();
+	const currentR = currentRotateVal(ship);
+	const shipPos = ship.getBoundingClientRect();
+	const gridRect = ship.parentElement.getBoundingClientRect();
 
 	const outOfBounds =
-		shipAbsPos.left < gridRect.left ||
+		shipPos.left < gridRect.left ||
 		// +1 to offset weird pixelation of ships length 3
-		shipAbsPos.right > gridRect.right + 1 ||
-		shipAbsPos.top < gridRect.top ||
-		shipAbsPos.bottom > gridRect.bottom;
+		shipPos.right > gridRect.right + 1 ||
+		shipPos.top < gridRect.top ||
+		shipPos.bottom > gridRect.bottom;
 	// move back ship to original position if move invalid
 	if (outOfBounds || isOverlapped(ship)) {
-		ship.style.transform = `translate(${beforeTranslate.x}px, ${beforeTranslate.y}px) rotate(${currentR}px)`;
+		ship.style.transform = `translate(${x}px, ${y}px) rotate(${currentR}deg)`;
 	}
 }
 
@@ -176,10 +174,21 @@ function createShip(obj, i) {
 	});
 
 	shipDiv.addEventListener("dblclick", e => {
-		const { x, y } = getCoords(e.target);
-		const currentR = currentRotateVal(e.target);
-		const toRotate = currentR === 360 ? 0 : currentR + 90;
-		e.target.style.transform = `translate(${x}px, ${y}px) rotate(${toRotate}deg)`;
+		const ship = e.target;
+		const { x, y } = getCoords(ship);
+		const currentR = currentRotateVal(ship);
+		const toRotate = currentR === 90 ? 0 : 90;
+		ship.style.transform = `translate(${x}px, ${y}px) rotate(${toRotate}deg)`;
+		const shipPos = ship.getBoundingClientRect();
+		const gridRect = ship.parentElement.getBoundingClientRect();
+		const outOfBounds =
+			shipPos.left < gridRect.left ||
+			shipPos.right > gridRect.right + 1 ||
+			shipPos.top < gridRect.top ||
+			shipPos.bottom > gridRect.bottom;
+		if (outOfBounds || isOverlapped(ship)) {
+			ship.style.transform = `translate(${x}px, ${y}px) rotate(${currentR}deg)`;
+		}
 	});
 
 	document.getElementById(player.name).parentElement.appendChild(shipDiv);
