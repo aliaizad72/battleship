@@ -1,5 +1,6 @@
 import "./global.css";
-import Game from "./game";
+import Player from "./player";
+import Ship from "./ship";
 import battleship from "./images/battleship.png";
 import carrier from "./images/carrier.png";
 import cruiser from "./images/cruiser.png";
@@ -24,14 +25,52 @@ const images = {
 	submarine90,
 };
 
-const game = new Game();
+const user = new Player("user");
+const computer = new Player("computer");
 const gridW = 400;
 const squareW = gridW / 10;
-game.players.forEach(player => {
-	createBoard(player);
+createBoard(user);
+createBoard(computer);
+user.addDefaultShips();
+addShipsToBoard(user);
+
+function addShipsToBoard(player) {
+	player.gameboard.ships.forEach((obj, i) => {
+		createShip(player, obj, i);
+	});
+}
+
+const playerGridContainer = document.getElementById(`${user.name}`);
+playerGridContainer.addEventListener("dragover", e => e.preventDefault());
+playerGridContainer.addEventListener("drop", e => gridDrop(e));
+
+const playerShips = document.querySelectorAll(`.${user.name}-ships`);
+playerShips.forEach(ship => {
+	ship.addEventListener("dragstart", e => {
+		e.dataTransfer.setData("draggable", e.target.id);
+		e.dataTransfer.setData("startSquare", getSquareFromDrag(e));
+	});
+
+	ship.addEventListener("dblclick", e => {
+		const ship = e.target;
+		changeAxis(ship);
+
+		const shipPos = ship.getBoundingClientRect();
+		const gridRect = ship.parentElement.getBoundingClientRect();
+		const outOfBounds =
+			shipPos.left < gridRect.left ||
+			shipPos.right > gridRect.right + 1 ||
+			shipPos.top < gridRect.top ||
+			shipPos.bottom > gridRect.bottom;
+		if (outOfBounds || isOverlapped(ship)) {
+			changeAxis(ship);
+			shakeShip(ship);
+			return;
+		}
+		updateShipPosition(ship);
+	});
+	// rotate ship when double click
 });
-addShipsToBoard(game.players[0]);
-// const playerGridContainer = ;
 
 //create gameboard element and assign an id of player
 // w and h of each grid squares = 45px
@@ -39,8 +78,6 @@ function createBoard(player) {
 	const gridContainer = document.createElement("div");
 	gridContainer.className = `mx-auto relative grid-container`;
 	gridContainer.style.width = `${gridW}px`;
-	gridContainer.addEventListener("dragover", e => e.preventDefault());
-	gridContainer.addEventListener("drop", e => gridDrop(e));
 
 	const grid = document.createElement("div");
 	grid.id = player.name;
@@ -221,12 +258,6 @@ function strCoords(num) {
 	return num;
 }
 
-function addShipsToBoard(player) {
-	player.gameboard.ships.forEach((obj, i) => {
-		createShip(player, obj, i);
-	});
-}
-
 function createShip(player, obj, i) {
 	const ship = document.createElement("img");
 	const [r, c] = obj.coords[0];
@@ -254,30 +285,6 @@ function createShip(player, obj, i) {
 	ship.style.transformOrigin = `${squareW / 2}px ${squareW / 2}px`;
 	ship.draggable = true;
 
-	ship.addEventListener("dragstart", e => {
-		e.dataTransfer.setData("draggable", e.target.id);
-		e.dataTransfer.setData("startSquare", getSquareFromDrag(e));
-	});
-
-	ship.addEventListener("dblclick", e => {
-		const ship = e.target;
-		changeAxis(ship);
-
-		const shipPos = ship.getBoundingClientRect();
-		const gridRect = ship.parentElement.getBoundingClientRect();
-		const outOfBounds =
-			shipPos.left < gridRect.left ||
-			shipPos.right > gridRect.right + 1 ||
-			shipPos.top < gridRect.top ||
-			shipPos.bottom > gridRect.bottom;
-		if (outOfBounds || isOverlapped(ship)) {
-			changeAxis(ship);
-			shakeShip(ship);
-			return;
-		}
-		updateShipPosition(ship);
-	});
-
 	document.getElementById(player.name).parentElement.appendChild(ship);
 }
 
@@ -296,15 +303,16 @@ function changeAxis(ship) {
 }
 
 function lockShipPositions() {
-	const ships = [...document.querySelectorAll(".player-ships")];
+	const ships = [...document.querySelectorAll(`.user-ships`)];
 	ships.forEach(ship => {
-		console.log(ship.dataset.name);
-		console.log(ship.dataset.length);
-		console.log(ship.dataset.start);
-		console.log(ship.dataset.end);
+		const newShip = new Ship(ship.dataset.name, Number(ship.dataset.length));
+		const startCoords = strToCoords(ship.dataset.start);
+		const endCoords = strToCoords(ship.dataset.end);
+		user.gameboard.addShip(newShip, startCoords, endCoords);
 	});
 }
 
 document.getElementById("lock-btn").addEventListener("click", () => {
+	user.resetGameboard();
 	lockShipPositions();
 });

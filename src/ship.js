@@ -2,7 +2,7 @@ export default class Ship {
 	#hitCount = 0;
 	#name;
 	#length;
-	#direction;
+	#horizontal;
 
 	constructor(name, length) {
 		this.#setName(name);
@@ -37,11 +37,11 @@ export default class Ship {
 		return this.#hitCount === this.#length;
 	}
 
-	set direction(dir) {
-		this.#direction = dir;
+	set horizontal(strBool) {
+		this.#horizontal = strBool;
 	}
 
-	get direction() {
-		return this.#direction;
+	get horizontal() {
+		return this.#horizontal;
 	}
 }
