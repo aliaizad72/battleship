@@ -139,6 +139,10 @@ export default class Gameboard {
 		return this.#ships.map(obj => obj.ship.sunk).every(bool => bool);
 	}
 
+	resetShips() {
+		this.#ships = [];
+	}
+
 	get ships() {
 		return this.#ships;
 	}

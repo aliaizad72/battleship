@@ -25,11 +25,13 @@ const images = {
 };
 
 const game = new Game();
-const player = game.players[0];
 const gridW = 400;
 const squareW = gridW / 10;
-createBoard(player);
-addShipsToBoard(player);
+game.players.forEach(player => {
+	createBoard(player);
+});
+addShipsToBoard(game.players[0]);
+// const playerGridContainer = ;
 
 //create gameboard element and assign an id of player
 // w and h of each grid squares = 45px
@@ -63,7 +65,7 @@ function createBoard(player) {
 	}
 
 	gridContainer.appendChild(grid);
-	document.body.appendChild(gridContainer);
+	document.getElementById("grids").appendChild(gridContainer);
 }
 
 function gridDrop(e) {
@@ -201,7 +203,6 @@ function updateShipPosition(ship) {
 	const start = document
 		.elementsFromPoint(x1, y1)
 		.find(e => e.classList.contains("square")).dataset.coords;
-	console.log(start);
 	const numStart = strToCoords(start);
 	const toAdd = Number(ship.dataset.length) - 1;
 	if (ship.dataset.horizontal == "true") {
@@ -222,15 +223,15 @@ function strCoords(num) {
 
 function addShipsToBoard(player) {
 	player.gameboard.ships.forEach((obj, i) => {
-		createShip(obj, i);
+		createShip(player, obj, i);
 	});
 }
 
-function createShip(obj, i) {
+function createShip(player, obj, i) {
 	const ship = document.createElement("img");
 	const [r, c] = obj.coords[0];
 
-	ship.className = `absolute hover:cursor-move ship`;
+	ship.className = `absolute hover:cursor-move ship ${player.name}-ships`;
 	ship.dataset.name = obj.ship.name;
 	ship.dataset.horizontal = obj.ship.horizontal;
 	ship.dataset.length = obj.ship.length;
@@ -293,3 +294,17 @@ function changeAxis(ship) {
 		ship.dataset.horizontal = "true";
 	}
 }
+
+function lockShipPositions() {
+	const ships = [...document.querySelectorAll(".player-ships")];
+	ships.forEach(ship => {
+		console.log(ship.dataset.name);
+		console.log(ship.dataset.length);
+		console.log(ship.dataset.start);
+		console.log(ship.dataset.end);
+	});
+}
+
+document.getElementById("lock-btn").addEventListener("click", () => {
+	lockShipPositions();
+});
