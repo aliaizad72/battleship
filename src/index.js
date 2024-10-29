@@ -5,6 +5,11 @@ import carrier from "./images/carrier.png";
 import cruiser from "./images/cruiser.png";
 import destroyer from "./images/destroyer.png";
 import submarine from "./images/submarine.png";
+import battleship90 from "./images/battleship-90.png";
+import carrier90 from "./images/carrier-90.png";
+import cruiser90 from "./images/cruiser-90.png";
+import destroyer90 from "./images/destroyer-90.png";
+import submarine90 from "./images/submarine-90.png";
 
 const images = {
 	battleship,
@@ -12,6 +17,11 @@ const images = {
 	cruiser,
 	destroyer,
 	submarine,
+	battleship90,
+	carrier90,
+	cruiser90,
+	destroyer90,
+	submarine90,
 };
 
 const game = new Game();
@@ -72,7 +82,6 @@ function gridDrop(e) {
 	translateShip(ship, d);
 
 	// find abs position of ship after translation
-	const currentR = currentRotateVal(ship);
 	const shipPos = ship.getBoundingClientRect();
 	const gridRect = ship.parentElement.getBoundingClientRect();
 
@@ -84,15 +93,14 @@ function gridDrop(e) {
 		shipPos.bottom > gridRect.bottom;
 	// move back ship to original position if move invalid
 	if (outOfBounds || isOverlapped(ship)) {
-		ship.style.transform = `translate(${x}px, ${y}px) rotate(${currentR}deg)`;
+		ship.style.transform = `translate(${x}px, ${y}px)`;
 		shakeShip(ship);
 	}
 }
 
 function shakeShip(ship) {
-	const currentR = currentRotateVal(ship);
 	const { x, y } = getCoords(ship);
-	if (currentR === 0) {
+	if (ship.dataset.horizontal === "true") {
 		ship.animate(
 			[
 				{ transform: `translate(${x}px, ${y}px)` },
@@ -107,15 +115,15 @@ function shakeShip(ship) {
 				iterations: 1,
 			},
 		);
-	} else if (currentR === 90) {
+	} else {
 		ship.animate(
 			[
-				{ transform: `translate(${x}px, ${y}px) rotate(${currentR}deg)` },
-				{ transform: `translate(${x}px, ${y - 10}px) rotate(${currentR}deg)` },
-				{ transform: `translate(${x}px, ${y + 10}px) rotate(${currentR}deg)` },
-				{ transform: `translate(${x}px, ${y - 10}px) rotate(${currentR}deg)` },
-				{ transform: `translate(${x}px, ${y + 10}px) rotate(${currentR}deg)` },
-				{ transform: `translate(${x}px, ${y}px) rotate(${currentR}deg)` },
+				{ transform: `translate(${x}px, ${y}px)` },
+				{ transform: `translate(${x}px, ${y - 10}px)` },
+				{ transform: `translate(${x}px, ${y + 10}px)` },
+				{ transform: `translate(${x}px, ${y - 10}px)` },
+				{ transform: `translate(${x}px, ${y + 10}px)` },
+				{ transform: `translate(${x}px, ${y}px)` },
 			],
 			{
 				duration: 188,
@@ -154,10 +162,9 @@ function getCoords(element) {
 function translateShip(ship, distance) {
 	const shipPos = getCoords(ship);
 	const [dr, dc] = distance;
-	const currentR = currentRotateVal(ship);
 	ship.style.transform = `translate(${shipPos.x + dc * squareW}px, ${
 		shipPos.y + dr * squareW
-	}px) rotate(${currentR}deg)`;
+	}px)`;
 }
 
 function isOverlapped(ship) {
@@ -203,17 +210,23 @@ function createShip(obj, i) {
 	const [r, c] = obj.coords[0];
 
 	ship.className = `absolute hover:cursor-move ship`;
+	ship.dataset.name = obj.ship.name;
+	ship.dataset.horizontal = obj.ship.horizontal;
+	ship.dataset.length = obj.ship.length;
 
-	ship.style.height = `${squareW}px`;
-	ship.style.width = `${obj.ship.length * squareW}px`;
-	if (!obj.ship.horizontal) {
-		ship.style.transform = `rotate(90deg)`;
+	if (obj.ship.horizontal) {
+		ship.src = images[obj.ship.name];
+		ship.style.height = `${squareW}px`;
+		ship.style.width = `${obj.ship.length * squareW}px`;
+	} else {
+		ship.src = images[obj.ship.name + "90"];
+		ship.style.width = `${squareW}px`;
+		ship.style.height = `${obj.ship.length * squareW}px`;
 	}
 
 	ship.style.left = `${c * squareW}px`;
 	ship.style.top = `${r * squareW}px`;
 	ship.id = `${player.name}-ship-${i}`;
-	ship.src = images[obj.ship.name];
 	ship.style.transformOrigin = `${squareW / 2}px ${squareW / 2}px`;
 	ship.draggable = true;
 
@@ -224,10 +237,8 @@ function createShip(obj, i) {
 
 	ship.addEventListener("dblclick", e => {
 		const ship = e.target;
-		const { x, y } = getCoords(ship);
-		const currentR = currentRotateVal(ship);
-		const toRotate = currentR === 90 ? 0 : 90;
-		ship.style.transform = `translate(${x}px, ${y}px) rotate(${toRotate}deg)`;
+		changeAxis(ship);
+
 		const shipPos = ship.getBoundingClientRect();
 		const gridRect = ship.parentElement.getBoundingClientRect();
 		const outOfBounds =
@@ -236,7 +247,7 @@ function createShip(obj, i) {
 			shipPos.top < gridRect.top ||
 			shipPos.bottom > gridRect.bottom;
 		if (outOfBounds || isOverlapped(ship)) {
-			ship.style.transform = `translate(${x}px, ${y}px) rotate(${currentR}deg)`;
+			changeAxis(ship);
 			shakeShip(ship);
 		}
 	});
@@ -244,7 +255,16 @@ function createShip(obj, i) {
 	document.getElementById(player.name).parentElement.appendChild(ship);
 }
 
-function currentRotateVal(element) {
-	const matrix = new DOMMatrix(getComputedStyle(element).transform);
-	return (Math.atan2(matrix.b, matrix.a) * 180) / Math.PI;
+function changeAxis(ship) {
+	if (ship.dataset.horizontal == "true") {
+		ship.src = images[ship.dataset.name + "90"];
+		ship.style.width = `${squareW}px`;
+		ship.style.height = `${ship.dataset.length * squareW}px`;
+		ship.dataset.horizontal = "false";
+	} else {
+		ship.src = images[ship.dataset.name];
+		ship.style.height = `${squareW}px`;
+		ship.style.width = `${ship.dataset.length * squareW}px`;
+		ship.dataset.horizontal = "true";
+	}
 }
