@@ -34,7 +34,9 @@ const { signal } = controller;
 createBoard(user);
 createBoard(computer);
 user.addDefaultShips();
+computer.addDefaultShips();
 addShipsToBoard(user);
+addShipsToBoard(computer);
 
 function addShipsToBoard(player) {
 	player.gameboard.ships.forEach((obj, i) => {
@@ -43,15 +45,21 @@ function addShipsToBoard(player) {
 }
 
 const playerGridContainer = document.getElementById(`${user.name}`);
-playerGridContainer.addEventListener("dragover", e => e.preventDefault());
-playerGridContainer.addEventListener("drop", e => gridDrop(e));
+playerGridContainer.addEventListener("dragover", e => e.preventDefault(), {
+	signal,
+});
+playerGridContainer.addEventListener("drop", e => gridDrop(e), { signal });
 
 const playerShips = document.querySelectorAll(`.${user.name}-ships`);
 playerShips.forEach(ship => {
-	ship.addEventListener("dragstart", e => {
-		e.dataTransfer.setData("draggable", e.target.id);
-		e.dataTransfer.setData("startSquare", getSquareFromDrag(e));
-	});
+	ship.addEventListener(
+		"dragstart",
+		e => {
+			e.dataTransfer.setData("draggable", e.target.id);
+			e.dataTransfer.setData("startSquare", getSquareFromDrag(e));
+		},
+		{ signal },
+	);
 
 	ship.addEventListener("dblclick", e => rotateShip(e), { signal });
 	// rotate ship when double click
@@ -266,7 +274,7 @@ function createShip(player, obj, i) {
 	const ship = document.createElement("img");
 	const [r, c] = obj.coords[0];
 
-	ship.className = `absolute hover:cursor-move ship ${player.name}-ships`;
+	ship.className = `absolute  ship ${player.name}-ships`;
 	ship.dataset.name = obj.ship.name;
 	ship.dataset.horizontal = obj.ship.horizontal;
 	ship.dataset.length = obj.ship.length;
@@ -287,7 +295,12 @@ function createShip(player, obj, i) {
 	ship.style.top = `${r * squareW}px`;
 	ship.id = `${player.name}-ship-${i}`;
 	ship.style.transformOrigin = `${squareW / 2}px ${squareW / 2}px`;
-	ship.draggable = true;
+	if (player.name == "user") {
+		ship.draggable = true;
+		ship.classList.add("hover:cursor-move");
+	} else {
+		ship.style.zIndex = "-1";
+	}
 
 	document.getElementById(player.name).parentElement.appendChild(ship);
 }
@@ -324,11 +337,40 @@ function removeShipsDrag() {
 	});
 }
 
-document.getElementById("lock-btn").addEventListener("click", e => {
+document.getElementById("start").addEventListener("click", e => {
 	e.target.classList.add("hidden");
 	user.resetGameboard();
 	updatePlayerGameboard();
 	removeShipsDrag();
-	// removes double click event listener
+	// removes event listeners
 	controller.abort();
+	makeEnemyGridHoverable();
+	makeEnemyGridClickable();
 });
+
+function makeEnemyGridHoverable() {
+	const squares = document.getElementById("computer").childNodes;
+	squares.forEach(square => {
+		square.classList.add("hover:bg-blue-950", "transition");
+	});
+}
+
+function makeEnemyGridClickable() {
+	const squares = document.getElementById("computer").childNodes;
+	squares.forEach(square => {
+		square.addEventListener("click", e => shoot(e));
+	});
+}
+
+function shoot(e) {
+	const shootCoords = strToCoords(e.target.dataset.coords);
+	const shipCoords = computer.gameboard.shipCoords;
+	const isHit = JSON.stringify(shipCoords).includes(
+		JSON.stringify(shootCoords),
+	);
+	computer.gameboard.receiveAttack(shootCoords);
+	e.target.classList.remove("bg-blue-100", "hover:bg-blue-950");
+	if (isHit) {
+		e.target.classList.add("bg-transparent");
+	}
+}
