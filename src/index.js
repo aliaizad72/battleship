@@ -85,15 +85,44 @@ function gridDrop(e) {
 	// move back ship to original position if move invalid
 	if (outOfBounds || isOverlapped(ship)) {
 		ship.style.transform = `translate(${x}px, ${y}px) rotate(${currentR}deg)`;
-		// shakeShip(ship, currentR);
+		shakeShip(ship);
 	}
 }
 
-function shakeShip(ship, currentR) {
-	ship.classList.add(`shake-${currentR}`);
-	setTimeout(() => {
-		ship.classList.remove(`shake-${currentR}`);
-	}, 188);
+function shakeShip(ship) {
+	const currentR = currentRotateVal(ship);
+	const { x, y } = getCoords(ship);
+	if (currentR === 0) {
+		ship.animate(
+			[
+				{ transform: `translate(${x}px, ${y}px)` },
+				{ transform: `translate(${x - 10}px, ${y}px)` },
+				{ transform: `translate(${x + 10}px, ${y}px)` },
+				{ transform: `translate(${x - 10}px, ${y}px)` },
+				{ transform: `translate(${x + 10}px, ${y}px)` },
+				{ transform: `translate(${x}px, ${y}px)` },
+			],
+			{
+				duration: 188,
+				iterations: 1,
+			},
+		);
+	} else if (currentR === 90) {
+		ship.animate(
+			[
+				{ transform: `translate(${x}px, ${y}px) rotate(${currentR}deg)` },
+				{ transform: `translate(${x}px, ${y - 10}px) rotate(${currentR}deg)` },
+				{ transform: `translate(${x}px, ${y + 10}px) rotate(${currentR}deg)` },
+				{ transform: `translate(${x}px, ${y - 10}px) rotate(${currentR}deg)` },
+				{ transform: `translate(${x}px, ${y + 10}px) rotate(${currentR}deg)` },
+				{ transform: `translate(${x}px, ${y}px) rotate(${currentR}deg)` },
+			],
+			{
+				duration: 188,
+				iterations: 1,
+			},
+		);
+	}
 }
 
 //this function returns the square element where the pointer was when drag event ends
@@ -208,6 +237,7 @@ function createShip(obj, i) {
 			shipPos.bottom > gridRect.bottom;
 		if (outOfBounds || isOverlapped(ship)) {
 			ship.style.transform = `translate(${x}px, ${y}px) rotate(${currentR}deg)`;
+			shakeShip(ship);
 		}
 	});
 
