@@ -29,6 +29,8 @@ const user = new Player("user");
 const computer = new Player("computer");
 const gridW = 400;
 const squareW = gridW / 10;
+const controller = new AbortController();
+const { signal } = controller;
 createBoard(user);
 createBoard(computer);
 user.addDefaultShips();
@@ -51,26 +53,28 @@ playerShips.forEach(ship => {
 		e.dataTransfer.setData("startSquare", getSquareFromDrag(e));
 	});
 
-	ship.addEventListener("dblclick", e => {
-		const ship = e.target;
-		changeAxis(ship);
-
-		const shipPos = ship.getBoundingClientRect();
-		const gridRect = ship.parentElement.getBoundingClientRect();
-		const outOfBounds =
-			shipPos.left < gridRect.left ||
-			shipPos.right > gridRect.right + 1 ||
-			shipPos.top < gridRect.top ||
-			shipPos.bottom > gridRect.bottom;
-		if (outOfBounds || isOverlapped(ship)) {
-			changeAxis(ship);
-			shakeShip(ship);
-			return;
-		}
-		updateShipPosition(ship);
-	});
+	ship.addEventListener("dblclick", e => rotateShip(e), { signal });
 	// rotate ship when double click
 });
+
+function rotateShip(e) {
+	const ship = e.target;
+	changeAxis(ship);
+
+	const shipPos = ship.getBoundingClientRect();
+	const gridRect = ship.parentElement.getBoundingClientRect();
+	const outOfBounds =
+		shipPos.left < gridRect.left ||
+		shipPos.right > gridRect.right + 1 ||
+		shipPos.top < gridRect.top ||
+		shipPos.bottom > gridRect.bottom;
+	if (outOfBounds || isOverlapped(ship)) {
+		changeAxis(ship);
+		shakeShip(ship);
+		return;
+	}
+	updateShipPosition(ship);
+}
 
 //create gameboard element and assign an id of player
 // w and h of each grid squares = 45px
@@ -302,8 +306,8 @@ function changeAxis(ship) {
 	}
 }
 
-function lockShipPositions() {
-	const ships = [...document.querySelectorAll(`.user-ships`)];
+function updatePlayerGameboard() {
+	const ships = document.querySelectorAll(`.user-ships`);
 	ships.forEach(ship => {
 		const newShip = new Ship(ship.dataset.name, Number(ship.dataset.length));
 		const startCoords = strToCoords(ship.dataset.start);
@@ -312,7 +316,19 @@ function lockShipPositions() {
 	});
 }
 
-document.getElementById("lock-btn").addEventListener("click", () => {
+function removeShipsDrag() {
+	const ships = document.querySelectorAll(`.user-ships`);
+	ships.forEach(ship => {
+		ship.classList.remove("hover:cursor-move");
+		ship.draggable = false;
+	});
+}
+
+document.getElementById("lock-btn").addEventListener("click", e => {
+	e.target.classList.add("hidden");
 	user.resetGameboard();
-	lockShipPositions();
+	updatePlayerGameboard();
+	removeShipsDrag();
+	// removes double click event listener
+	controller.abort();
 });
