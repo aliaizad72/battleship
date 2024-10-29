@@ -95,7 +95,9 @@ function gridDrop(e) {
 	if (outOfBounds || isOverlapped(ship)) {
 		ship.style.transform = `translate(${x}px, ${y}px)`;
 		shakeShip(ship);
+		return;
 	}
+	updateShipPosition(ship);
 }
 
 function shakeShip(ship) {
@@ -192,6 +194,25 @@ function isOverlapped(ship) {
 	return result.includes(true);
 }
 
+function updateShipPosition(ship) {
+	const { left, top } = ship.getBoundingClientRect();
+	const x1 = left + squareW / 2;
+	const y1 = top + squareW / 2;
+	const start = document
+		.elementsFromPoint(x1, y1)
+		.find(e => e.classList.contains("square")).dataset.coords;
+	console.log(start);
+	const numStart = strToCoords(start);
+	const toAdd = Number(ship.dataset.length) - 1;
+	if (ship.dataset.horizontal == "true") {
+		ship.dataset.start = start;
+		ship.dataset.end = `${numStart[0]}, ${numStart[1] + toAdd}`;
+	} else {
+		ship.dataset.start = start;
+		ship.dataset.end = `${numStart[0] + toAdd}, ${numStart[1]}`;
+	}
+}
+
 function strCoords(num) {
 	if (num < 10) {
 		return "0" + num;
@@ -213,6 +234,8 @@ function createShip(obj, i) {
 	ship.dataset.name = obj.ship.name;
 	ship.dataset.horizontal = obj.ship.horizontal;
 	ship.dataset.length = obj.ship.length;
+	ship.dataset.start = obj.coords[0];
+	ship.dataset.end = obj.coords[obj.ship.length - 1];
 
 	if (obj.ship.horizontal) {
 		ship.src = images[obj.ship.name];
@@ -249,7 +272,9 @@ function createShip(obj, i) {
 		if (outOfBounds || isOverlapped(ship)) {
 			changeAxis(ship);
 			shakeShip(ship);
+			return;
 		}
+		updateShipPosition(ship);
 	});
 
 	document.getElementById(player.name).parentElement.appendChild(ship);
