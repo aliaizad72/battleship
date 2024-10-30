@@ -98,7 +98,7 @@ export default class Gameboard {
 		return path;
 	}
 
-	#findShip(coords) {
+	findShip(coords) {
 		return this.#ships.find(ship => {
 			return this.#coordsInArray(ship.coords, coords);
 		}).ship;
@@ -129,7 +129,7 @@ export default class Gameboard {
 		// coords not shot yet
 		if (!this.#coordsInArray(this.#shots, coords)) {
 			if (this.#squareOccupied(coords)) {
-				this.#findShip(coords).hit();
+				this.findShip(coords).hit();
 			}
 			this.#shots.push(coords);
 		}
@@ -137,6 +137,10 @@ export default class Gameboard {
 
 	allSunk() {
 		return this.#ships.map(obj => obj.ship.sunk).every(bool => bool);
+	}
+
+	get sunkShips() {
+		return this.#ships.filter(obj => obj.ship.sunk);
 	}
 
 	get shipCoords() {

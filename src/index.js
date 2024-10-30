@@ -13,8 +13,8 @@ import cruiser90 from "./images/cruiser-90.png";
 import destroyer90 from "./images/destroyer-90.png";
 import submarine90 from "./images/submarine-90.png";
 
-import cannon from "./audio/cannon.mp3";
-import bubble from "./audio/bubble.mp3";
+import hit from "./audio/hit.mp3";
+import splosh from "./audio/splosh.mp3";
 
 const images = {
 	battleship,
@@ -115,8 +115,8 @@ function createBoard(player) {
 
 	for (let i = 0; i < 100; i++) {
 		const square = document.createElement("div");
-		square.dataset.coords = `${strCoords(i)}`.split("");
-		square.className = `border-2 bg-blue-100 border-blue-300 square`;
+		square.dataset.coords = `${prependZeroIfSingleDigit(i)}`.split("");
+		square.className = `border-2 bg-blue-100 border-blue-300 square transition`;
 
 		if (i % 10 !== 0) {
 			square.classList.add("border-l-0");
@@ -280,7 +280,7 @@ function updateShipPosition(ship) {
 	}
 }
 
-function strCoords(num) {
+function prependZeroIfSingleDigit(num) {
 	if (num < 10) {
 		return "0" + num;
 	}
@@ -291,7 +291,7 @@ function createShip(player, obj, i) {
 	const ship = document.createElement("img");
 	const [r, c] = obj.coords[0];
 
-	ship.className = `absolute  ship ${player.name}-ships`;
+	ship.className = `absolute ship ${player.name}-ships`;
 	ship.dataset.name = obj.ship.name;
 	ship.dataset.horizontal = obj.ship.horizontal;
 	ship.dataset.length = obj.ship.length;
@@ -368,39 +368,93 @@ document.getElementById("start").addEventListener("click", e => {
 function makeEnemyGridHoverable() {
 	const squares = document.getElementById("computer").childNodes;
 	squares.forEach(square => {
-		square.classList.add("hover:bg-red-200", "transition", "cursor-crosshair");
+		square.classList.add("hover:bg-blue-300", "cursor-crosshair");
 	});
 }
 
 function makeEnemyGridClickable() {
 	const squares = document.getElementById("computer").childNodes;
 	squares.forEach(square => {
-		square.addEventListener("click", e => shoot(e));
+		square.addEventListener("click", e => userShoot(e), { once: true });
 	});
 }
 
-function shoot(e) {
+function userShoot(e) {
 	const shootCoords = strToCoords(e.target.dataset.coords);
 	const shipCoords = computer.gameboard.shipCoords;
 	const isHit = JSON.stringify(shipCoords).includes(
 		JSON.stringify(shootCoords),
 	);
 	computer.gameboard.receiveAttack(shootCoords);
-	e.target.classList.remove("bg-blue-100", "hover:bg-red-400");
+	e.target.classList.remove("bg-blue-100", "hover:bg-blue-300");
 	if (isHit) {
-		e.target.classList.add("bg-green-500");
-		playCannon();
+		e.target.classList.add("bg-orange-300");
+		playHit();
+		const ship = computer.gameboard.findShip(shootCoords);
+		if (ship.sunk) {
+			setTimeout(playSplosh, 100);
+		}
 	} else {
-		playBubble();
+		e.target.classList.add("bg-blue-300");
+	}
+	revealSunkShips();
+	setTimeout(computerPlay, 1000);
+}
+
+function revealSunkShips() {
+	const sunkShips = computer.gameboard.sunkShips;
+	const squares = [...document.getElementById("computer").childNodes];
+	sunkShips.forEach(obj => {
+		obj.coords.forEach(coord => {
+			const coordStr = coord.join(",");
+			const square = squares.find(square => square.dataset.coords === coordStr);
+			square.classList.remove("bg-orange-300");
+		});
+	});
+}
+
+function allShots() {
+	const shots = [];
+	for (let i = 0; i < 10; i++) {
+		for (let j = 0; j < 10; j++) {
+			shots.push([i, j]);
+		}
+	}
+	return shots;
+}
+
+const possibleShots = allShots();
+function computerPlay() {
+	const index = Math.floor(Math.random() * possibleShots.length);
+	const randomShot = possibleShots.splice(index, 1)[0];
+	const isHit = JSON.stringify(user.gameboard.shipCoords).includes(
+		JSON.stringify(randomShot),
+	);
+
+	const coordStr = randomShot.join(",");
+	const squares = [...document.getElementById("user").childNodes];
+	const square = squares.find(square => square.dataset.coords === coordStr);
+
+	user.gameboard.receiveAttack(randomShot);
+	square.classList.remove("bg-blue-100");
+	if (isHit) {
+		square.classList.add("bg-orange-300");
+		playHit();
+		const ship = user.gameboard.findShip(randomShot);
+		if (ship.sunk) {
+			setTimeout(playSplosh, 300);
+		}
+	} else {
+		square.classList.add("bg-blue-300");
 	}
 }
 
-function playCannon() {
-	const cannonAudio = new Audio(cannon);
-	cannonAudio.play();
+function playHit() {
+	const hitAudio = new Audio(hit);
+	hitAudio.play();
 }
 
-function playBubble() {
-	const bubbleAudio = new Audio(bubble);
-	bubbleAudio.play();
+function playSplosh() {
+	const sploshAudio = new Audio(splosh);
+	sploshAudio.play();
 }
