@@ -1,6 +1,7 @@
 import "./global.css";
 import Player from "./player";
 import Ship from "./ship";
+
 import battleship from "./images/battleship.png";
 import carrier from "./images/carrier.png";
 import cruiser from "./images/cruiser.png";
@@ -11,6 +12,9 @@ import carrier90 from "./images/carrier-90.png";
 import cruiser90 from "./images/cruiser-90.png";
 import destroyer90 from "./images/destroyer-90.png";
 import submarine90 from "./images/submarine-90.png";
+
+import cannon from "./audio/cannon.mp3";
+import bubble from "./audio/bubble.mp3";
 
 const images = {
 	battleship,
@@ -364,7 +368,7 @@ document.getElementById("start").addEventListener("click", e => {
 function makeEnemyGridHoverable() {
 	const squares = document.getElementById("computer").childNodes;
 	squares.forEach(square => {
-		square.classList.add("hover:bg-blue-950", "transition");
+		square.classList.add("hover:bg-red-200", "transition", "cursor-crosshair");
 	});
 }
 
@@ -382,8 +386,21 @@ function shoot(e) {
 		JSON.stringify(shootCoords),
 	);
 	computer.gameboard.receiveAttack(shootCoords);
-	e.target.classList.remove("bg-blue-100", "hover:bg-blue-950");
+	e.target.classList.remove("bg-blue-100", "hover:bg-red-400");
 	if (isHit) {
-		e.target.classList.add("bg-transparent");
+		e.target.classList.add("bg-green-500");
+		playCannon();
+	} else {
+		playBubble();
 	}
+}
+
+function playCannon() {
+	const cannonAudio = new Audio(cannon);
+	cannonAudio.play();
+}
+
+function playBubble() {
+	const bubbleAudio = new Audio(bubble);
+	bubbleAudio.play();
 }

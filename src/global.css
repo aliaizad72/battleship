@@ -6,3 +6,7 @@ html,
 body {
   height: 100%;
 }
+
+.crosshair {
+  background-image: url("./images/carrier-90.png");
+}
