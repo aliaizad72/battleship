@@ -31,6 +31,7 @@ const gridW = 400;
 const squareW = gridW / 10;
 const controller = new AbortController();
 const { signal } = controller;
+let dropped = false;
 createBoard(user);
 createBoard(computer);
 user.addDefaultShips();
@@ -61,8 +62,19 @@ playerShips.forEach(ship => {
 		{ signal },
 	);
 
-	ship.addEventListener("dblclick", e => rotateShip(e), { signal });
 	// rotate ship when double click
+	ship.addEventListener("dblclick", e => rotateShip(e), { signal });
+
+	ship.addEventListener(
+		"dragend",
+		e => {
+			if (!dropped) {
+				shakeShip(e.target);
+			}
+			dropped = false;
+		},
+		{ signal },
+	);
 });
 
 function rotateShip(e) {
@@ -149,6 +161,7 @@ function gridDrop(e) {
 		return;
 	}
 	updateShipPosition(ship);
+	dropped = true;
 }
 
 function shakeShip(ship) {
