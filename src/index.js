@@ -375,7 +375,7 @@ function makeEnemyGridHoverable() {
 function makeEnemyGridClickable() {
 	const squares = document.getElementById("computer").childNodes;
 	squares.forEach(square => {
-		square.addEventListener("click", e => userShoot(e), { once: true });
+		square.addEventListener("click", userShoot, { once: true });
 	});
 }
 
@@ -392,12 +392,23 @@ function userShoot(e) {
 		playHit();
 		const ship = computer.gameboard.findShip(shootCoords);
 		if (ship.sunk) {
-			setTimeout(playSplosh, 100);
+			setTimeout(playSplosh, 50);
 		}
 	} else {
 		e.target.classList.add("bg-blue-300");
 	}
 	revealSunkShips();
+
+	if (computer.gameboard.allSunk()) {
+		document.getElementById("announce").textContent = "You win!";
+		const squares = e.target.parentElement.childNodes;
+		squares.forEach(square => {
+			square.removeEventListener("click", userShoot);
+			square.classList.remove("hover:bg-blue-300");
+		});
+		return;
+	}
+
 	setTimeout(computerPlay, 1000);
 }
 
@@ -442,10 +453,19 @@ function computerPlay() {
 		playHit();
 		const ship = user.gameboard.findShip(randomShot);
 		if (ship.sunk) {
-			setTimeout(playSplosh, 300);
+			setTimeout(playSplosh, 50);
 		}
 	} else {
 		square.classList.add("bg-blue-300");
+	}
+
+	if (user.gameboard.allSunk()) {
+		document.getElementById("announce").textContent = "Computer win!";
+		const squares = document.getElementById("computer").childNodes;
+		squares.forEach(square => {
+			square.removeEventListener("click", userShoot);
+			square.classList.remove("hover:bg-blue-300");
+		});
 	}
 }
 
