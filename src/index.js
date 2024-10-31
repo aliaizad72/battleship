@@ -15,6 +15,7 @@ import submarine90 from "./images/submarine-90.png";
 
 import hit from "./audio/hit.mp3";
 import splosh from "./audio/splosh.mp3";
+import ploop from "./audio/ploop.mp3";
 
 const images = {
 	battleship,
@@ -396,16 +397,18 @@ function userShoot(e) {
 		}
 	} else {
 		e.target.classList.add("bg-blue-300");
+		playPloop();
 	}
 	revealSunkShips();
 
+	const squares = e.target.parentElement.childNodes;
+	squares.forEach(square => {
+		square.removeEventListener("click", userShoot);
+		square.classList.remove("hover:bg-blue-300");
+	});
+
 	if (computer.gameboard.allSunk()) {
 		document.getElementById("announce").textContent = "You win!";
-		const squares = e.target.parentElement.childNodes;
-		squares.forEach(square => {
-			square.removeEventListener("click", userShoot);
-			square.classList.remove("hover:bg-blue-300");
-		});
 		return;
 	}
 
@@ -453,11 +456,15 @@ function computerPlay() {
 		playHit();
 		const ship = user.gameboard.findShip(randomShot);
 		if (ship.sunk) {
-			setTimeout(playSplosh, 50);
+			setTimeout(playSplosh, 200);
 		}
 	} else {
 		square.classList.add("bg-blue-300");
+		playPloop();
 	}
+
+	makeEnemyGridHoverable();
+	makeEnemyGridClickable();
 
 	if (user.gameboard.allSunk()) {
 		document.getElementById("announce").textContent = "Computer win!";
@@ -477,4 +484,9 @@ function playHit() {
 function playSplosh() {
 	const sploshAudio = new Audio(splosh);
 	sploshAudio.play();
+}
+
+function playPloop() {
+	const ploopAudio = new Audio(ploop);
+	ploopAudio.play();
 }
