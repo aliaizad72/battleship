@@ -39,8 +39,9 @@ const { signal } = controller;
 let dropped = false;
 createBoard(user);
 createBoard(computer);
-user.addDefaultShips();
-computer.addDefaultShips();
+user.addShipsRandomly();
+computer.addShipsRandomly();
+console.log(computer.gameboard.shipCoords);
 addShipsToBoard(user);
 addShipsToBoard(computer);
 

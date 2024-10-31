@@ -115,6 +115,24 @@ export default class Gameboard {
 		return true;
 	}
 
+	#randomStartCoords() {
+		const r = Math.floor(Math.random() * 9);
+		const c = Math.floor(Math.random() * 9);
+		const startCoords = [r, c];
+		if (this.#squareOccupied(startCoords)) {
+			return this.#randomStartCoords();
+		}
+
+		return startCoords;
+	}
+
+	randomCoords(ship) {
+		const start = this.#randomStartCoords();
+		const end = this.#validEnd(ship, start[0], start[1]);
+		const random = Math.floor(Math.random() * end.length);
+		return [start, end[random]];
+	}
+
 	addShip(ship, startCoords, endCoords) {
 		if (this.isValid(ship, startCoords, endCoords)) {
 			ship.horizontal = startCoords[0] === endCoords[0];
