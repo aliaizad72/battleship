@@ -363,17 +363,20 @@ function removeShipsDrag() {
 		ship.draggable = false;
 	});
 }
-
-document.getElementById("start").addEventListener("click", e => {
-	e.target.classList.add("hidden");
-	document.getElementById("restart").classList.remove("hidden");
-	user.resetGameboard();
-	updatePlayerGameboard();
-	removeShipsDrag();
-	// removes event listeners
-	controller.abort();
-	makeEnemyGridHoverable();
-	makeEnemyGridClickable();
+document.querySelectorAll(".difficulty").forEach(button => {
+	button.addEventListener("click", e => {
+		document
+			.querySelectorAll(".difficulty")
+			.forEach(button => button.classList.add("hidden"));
+		document.getElementById("restart").classList.remove("hidden");
+		user.resetGameboard();
+		updatePlayerGameboard();
+		removeShipsDrag();
+		// removes event listeners
+		controller.abort();
+		makeEnemyGridHoverable();
+		makeEnemyGridClickable();
+	});
 });
 
 document
@@ -459,22 +462,25 @@ function allShots() {
 }
 
 const possibleShots = allShots();
+let hunt = true;
+let targetStack = [];
+let mode;
+
 function computerPlay() {
-	const index = Math.floor(Math.random() * possibleShots.length);
-	const randomShot = possibleShots.splice(index, 1)[0];
+	const shot = randomShot();
 	const isHit = JSON.stringify(user.gameboard.shipCoords).includes(
-		JSON.stringify(randomShot),
+		JSON.stringify(shot),
 	);
 
-	const coordStr = randomShot.join(",");
+	const coordStr = shot.join(",");
 	const squares = [...document.getElementById("user").childNodes];
 	const square = squares.find(square => square.dataset.coords === coordStr);
 
-	user.gameboard.receiveAttack(randomShot);
+	user.gameboard.receiveAttack(shot);
 	square.classList.remove("bg-dark-blue");
 	if (isHit) {
 		square.classList.add("bg-neon-pink");
-		const ship = user.gameboard.findShip(randomShot);
+		const ship = user.gameboard.findShip(shot);
 		if (ship.sunk) {
 			playSunk();
 		} else {
@@ -500,6 +506,12 @@ function computerPlay() {
 			square.classList.remove("hover:bg-neon-blue", "cursor-crosshair");
 		});
 	}
+}
+
+function randomShot() {
+	const index = Math.floor(Math.random() * possibleShots.length);
+	const shot = possibleShots.splice(index, 1)[0];
+	return shot;
 }
 
 function reactivateEnemyGrid() {
