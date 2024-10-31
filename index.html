@@ -9,11 +9,21 @@
   <body class="bg-black">
     <h1 class="text-6xl font-medium p-2 pixel text-neon-blue my-5 text-center"> BATTLESHIP</h1>
     <div id="grids" class="flex gap-10 justify-center">
+    <div id="announce" class="absolute pixel text-[200px] text-center top-[168px] z-10 bg-black w-full hidden">
     </div>
-    <div class="flex justify-center my-5">
-      <button id="start" class="focus:outline-none text-white bg-green-700 hover:bg-green-800 font-medium rounded-lg text-sm px-5 py-2.5 mx-auto">Start</button>
     </div>
-    <div id="announce">
+    <div class="flex justify-center my-1 gap-3">
+      <button id="restart" class="text-4xl pixel text-neon-green hover:text-neon-blue hidden">RESTART</button>
+      <button id="start" class="text-4xl pixel text-neon-green hover:text-neon-blue">START</button>
+    </div>
+    <div class="mx-auto my-6 w-[850px] pb-5">
+      <ul class="mx-auto text-xl text-dark-blue pixelify-sans list-disc list-inside">
+        <li>Click and hold mouse to drag and drop ships on the board</li>
+        <li>Double click ships to rotate them from horizontal to vertical (and vice versa)</li>
+        <li>Ships can only rotate 90 degrees clockwise when vertical, 90 degrees anticlockwise when horizontal</li>
+        <li>If everything is set, press start to play</li>
+        <li>Most importantly, have fun!</li>
+      </ul>
     </div>
   </body>
 </html>

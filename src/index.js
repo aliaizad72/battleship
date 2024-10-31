@@ -43,7 +43,6 @@ createBoard(user);
 createBoard(computer);
 user.addShipsRandomly();
 computer.addShipsRandomly();
-console.log(computer.gameboard.shipCoords);
 addShipsToBoard(user);
 addShipsToBoard(computer);
 
@@ -134,6 +133,13 @@ function createBoard(player) {
 	}
 
 	gridContainer.appendChild(grid);
+
+	const gridTag = document.createElement("p");
+	const tag = player.name === "user" ? "YOU" : "COMPUTER";
+	gridTag.textContent = `${tag}`;
+	gridTag.className = "text-neon-blue pixelify-sans text-xl text-center my-2";
+	gridContainer.appendChild(gridTag);
+
 	document.getElementById("grids").appendChild(gridContainer);
 }
 
@@ -360,6 +366,7 @@ function removeShipsDrag() {
 
 document.getElementById("start").addEventListener("click", e => {
 	e.target.classList.add("hidden");
+	document.getElementById("restart").classList.remove("hidden");
 	user.resetGameboard();
 	updatePlayerGameboard();
 	removeShipsDrag();
@@ -368,6 +375,10 @@ document.getElementById("start").addEventListener("click", e => {
 	makeEnemyGridHoverable();
 	makeEnemyGridClickable();
 });
+
+document
+	.getElementById("restart")
+	.addEventListener("click", () => location.reload());
 
 function makeEnemyGridHoverable() {
 	const squares = document.getElementById("computer").childNodes;
@@ -394,7 +405,7 @@ function userShoot(e) {
 	e.target.classList.remove("bg-dark-blue");
 
 	if (isHit) {
-		e.target.classList.add("bg-neon-yellow");
+		e.target.classList.add("bg-neon-pink");
 		playHit();
 		const ship = computer.gameboard.findShip(shootCoords);
 		if (ship.sunk) {
@@ -414,7 +425,10 @@ function userShoot(e) {
 	});
 
 	if (computer.gameboard.allSunk()) {
-		document.getElementById("announce").textContent = "You win!";
+		const announce = document.getElementById("announce");
+		announce.textContent = "YOU WIN!";
+		announce.classList.add("text-neon-green");
+		announce.classList.remove("hidden");
 		playWin();
 		return;
 	}
@@ -459,7 +473,7 @@ function computerPlay() {
 	user.gameboard.receiveAttack(randomShot);
 	square.classList.remove("bg-dark-blue");
 	if (isHit) {
-		square.classList.add("bg-neon-yellow");
+		square.classList.add("bg-neon-pink");
 		const ship = user.gameboard.findShip(randomShot);
 		if (ship.sunk) {
 			playSunk();
@@ -474,13 +488,17 @@ function computerPlay() {
 	reactivateEnemyGrid();
 
 	if (user.gameboard.allSunk()) {
-		document.getElementById("announce").textContent = "Computer win!";
+		const announce = document.getElementById("announce");
+		announce.textContent = "YOU LOSE!";
+		announce.classList.add("text-neon-red");
+		announce.classList.remove("hidden");
+		playLose();
+
 		const squares = document.getElementById("computer").childNodes;
 		squares.forEach(square => {
 			square.removeEventListener("click", userShoot);
 			square.classList.remove("hover:bg-neon-blue", "cursor-crosshair");
 		});
-		playLose();
 	}
 }
 
