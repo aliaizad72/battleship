@@ -108,7 +108,7 @@ function rotateShip(e) {
 // w and h of each grid squares = 45px
 function createBoard(player) {
 	const gridContainer = document.createElement("div");
-	gridContainer.className = `mx-auto relative grid-container`;
+	gridContainer.className = `relative grid-container`;
 	gridContainer.style.width = `${gridW}px`;
 
 	const grid = document.createElement("div");
@@ -120,7 +120,7 @@ function createBoard(player) {
 	for (let i = 0; i < 100; i++) {
 		const square = document.createElement("div");
 		square.dataset.coords = `${prependZeroIfSingleDigit(i)}`.split("");
-		square.className = `border-2 bg-blue-100 border-blue-300 square transition`;
+		square.className = `border-2 bg-dark-blue border-neon-blue square transition`;
 
 		if (i % 10 !== 0) {
 			square.classList.add("border-l-0");
@@ -372,7 +372,7 @@ document.getElementById("start").addEventListener("click", e => {
 function makeEnemyGridHoverable() {
 	const squares = document.getElementById("computer").childNodes;
 	squares.forEach(square => {
-		square.classList.add("hover:bg-blue-300", "cursor-crosshair");
+		square.classList.add("hover:bg-neon-blue", "cursor-crosshair");
 	});
 }
 
@@ -391,17 +391,17 @@ function userShoot(e) {
 	);
 
 	computer.gameboard.receiveAttack(shootCoords);
-	e.target.classList.remove("bg-blue-100");
+	e.target.classList.remove("bg-dark-blue");
 
 	if (isHit) {
-		e.target.classList.add("bg-orange-300");
+		e.target.classList.add("bg-neon-yellow");
 		playHit();
 		const ship = computer.gameboard.findShip(shootCoords);
 		if (ship.sunk) {
 			setTimeout(playSunk, 50);
 		}
 	} else {
-		e.target.classList.add("bg-blue-300");
+		e.target.classList.add("bg-neon-blue");
 		playMiss();
 	}
 
@@ -410,7 +410,7 @@ function userShoot(e) {
 	const squares = e.target.parentElement.childNodes;
 	squares.forEach(square => {
 		square.removeEventListener("click", userShoot);
-		square.classList.remove("hover:bg-blue-300", "cursor-crosshair");
+		square.classList.remove("hover:bg-neon-blue", "cursor-crosshair");
 	});
 
 	if (computer.gameboard.allSunk()) {
@@ -429,7 +429,7 @@ function revealSunkShips() {
 		obj.coords.forEach(coord => {
 			const coordStr = coord.join(",");
 			const square = squares.find(square => square.dataset.coords === coordStr);
-			square.classList.remove("bg-orange-300");
+			square.style.zIndex = "-2";
 		});
 	});
 }
@@ -457,9 +457,9 @@ function computerPlay() {
 	const square = squares.find(square => square.dataset.coords === coordStr);
 
 	user.gameboard.receiveAttack(randomShot);
-	square.classList.remove("bg-blue-100");
+	square.classList.remove("bg-dark-blue");
 	if (isHit) {
-		square.classList.add("bg-orange-300");
+		square.classList.add("bg-neon-yellow");
 		const ship = user.gameboard.findShip(randomShot);
 		if (ship.sunk) {
 			playSunk();
@@ -467,7 +467,7 @@ function computerPlay() {
 			playHit();
 		}
 	} else {
-		square.classList.add("bg-blue-300");
+		square.classList.add("bg-neon-blue");
 		playMiss();
 	}
 
@@ -478,7 +478,7 @@ function computerPlay() {
 		const squares = document.getElementById("computer").childNodes;
 		squares.forEach(square => {
 			square.removeEventListener("click", userShoot);
-			square.classList.remove("hover:bg-blue-300", "cursor-crosshair");
+			square.classList.remove("hover:bg-neon-blue", "cursor-crosshair");
 		});
 		playLose();
 	}
@@ -489,11 +489,11 @@ function reactivateEnemyGrid() {
 	makeEnemyGridClickable();
 	const shotSquares = [
 		...document.getElementById("computer").childNodes,
-	].filter(square => !square.classList.contains("bg-blue-100"));
+	].filter(square => !square.classList.contains("bg-dark-blue"));
 
 	shotSquares.forEach(square => {
 		square.removeEventListener("click", userShoot);
-		square.classList.remove("hover:bg-blue-300", "cursor-crosshair");
+		square.classList.remove("hover:bg-neon-blue", "cursor-crosshair");
 	});
 }
 
