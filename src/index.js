@@ -14,8 +14,10 @@ import destroyer90 from "./images/destroyer-90.png";
 import submarine90 from "./images/submarine-90.png";
 
 import hit from "./audio/hit.mp3";
-import splosh from "./audio/splosh.mp3";
-import ploop from "./audio/ploop.mp3";
+import sunk from "./audio/sunk.mp3";
+import miss from "./audio/miss.mp3";
+import win from "./audio/win.wav";
+import lose from "./audio/lose.mp3";
 
 const images = {
 	battleship,
@@ -387,29 +389,33 @@ function userShoot(e) {
 	const isHit = JSON.stringify(shipCoords).includes(
 		JSON.stringify(shootCoords),
 	);
+
 	computer.gameboard.receiveAttack(shootCoords);
-	e.target.classList.remove("bg-blue-100", "hover:bg-blue-300");
+	e.target.classList.remove("bg-blue-100");
+
 	if (isHit) {
 		e.target.classList.add("bg-orange-300");
 		playHit();
 		const ship = computer.gameboard.findShip(shootCoords);
 		if (ship.sunk) {
-			setTimeout(playSplosh, 50);
+			setTimeout(playSunk, 50);
 		}
 	} else {
 		e.target.classList.add("bg-blue-300");
-		playPloop();
+		playMiss();
 	}
+
 	revealSunkShips();
 
 	const squares = e.target.parentElement.childNodes;
 	squares.forEach(square => {
 		square.removeEventListener("click", userShoot);
-		square.classList.remove("hover:bg-blue-300");
+		square.classList.remove("hover:bg-blue-300", "cursor-crosshair");
 	});
 
 	if (computer.gameboard.allSunk()) {
 		document.getElementById("announce").textContent = "You win!";
+		playWin();
 		return;
 	}
 
@@ -454,27 +460,41 @@ function computerPlay() {
 	square.classList.remove("bg-blue-100");
 	if (isHit) {
 		square.classList.add("bg-orange-300");
-		playHit();
 		const ship = user.gameboard.findShip(randomShot);
 		if (ship.sunk) {
-			setTimeout(playSplosh, 200);
+			playSunk();
+		} else {
+			playHit();
 		}
 	} else {
 		square.classList.add("bg-blue-300");
-		playPloop();
+		playMiss();
 	}
 
-	makeEnemyGridHoverable();
-	makeEnemyGridClickable();
+	reactivateEnemyGrid();
 
 	if (user.gameboard.allSunk()) {
 		document.getElementById("announce").textContent = "Computer win!";
 		const squares = document.getElementById("computer").childNodes;
 		squares.forEach(square => {
 			square.removeEventListener("click", userShoot);
-			square.classList.remove("hover:bg-blue-300");
+			square.classList.remove("hover:bg-blue-300", "cursor-crosshair");
 		});
+		playLose();
 	}
+}
+
+function reactivateEnemyGrid() {
+	makeEnemyGridHoverable();
+	makeEnemyGridClickable();
+	const shotSquares = [
+		...document.getElementById("computer").childNodes,
+	].filter(square => !square.classList.contains("bg-blue-100"));
+
+	shotSquares.forEach(square => {
+		square.removeEventListener("click", userShoot);
+		square.classList.remove("hover:bg-blue-300", "cursor-crosshair");
+	});
 }
 
 function playHit() {
@@ -482,12 +502,22 @@ function playHit() {
 	hitAudio.play();
 }
 
-function playSplosh() {
-	const sploshAudio = new Audio(splosh);
-	sploshAudio.play();
+function playSunk() {
+	const sunkAudio = new Audio(sunk);
+	sunkAudio.play();
 }
 
-function playPloop() {
-	const ploopAudio = new Audio(ploop);
-	ploopAudio.play();
+function playMiss() {
+	const missAudio = new Audio(miss);
+	missAudio.play();
+}
+
+function playWin() {
+	const winAudio = new Audio(win);
+	winAudio.play();
+}
+
+function playLose() {
+	const loseAudio = new Audio(lose);
+	loseAudio.play();
 }
