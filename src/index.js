@@ -242,6 +242,7 @@ playerShips.forEach(ship => {
 
 			const ship = e.target;
 			changeAxis(ship);
+			updateShipPosition(ship);
 
 			if (shipOutOfBounds(ship) || isOverlapped(ship)) {
 				changeAxis(ship);
@@ -277,7 +278,8 @@ function shipOutOfBounds(ship) {
 		// +1 to offset weird pixelation of ships length 3
 		shipRect.right > gridRect.right + 1 ||
 		shipRect.top < gridRect.top ||
-		shipRect.bottom > gridRect.bottom
+		// another strange lost pixels case
+		shipRect.bottom + 5 > gridRect.bottom
 	);
 }
 
@@ -335,8 +337,8 @@ function isOverlapped(ship) {
 	const horizontal = ship.dataset.horizontal;
 	const startCoords = strToCoords(ship.dataset.start);
 	const endCoords = strToCoords(ship.dataset.end);
-	const c = endCoords[1] - startCoords[1] + 1;
 	const r = endCoords[0] - startCoords[0] + 1;
+	const c = endCoords[1] - startCoords[1] + 1;
 
 	// find the x, y window coordinates of the center of the first ship square
 	const { left, top } = ship.getBoundingClientRect();
