@@ -157,6 +157,20 @@ export default class Gameboard {
 		return this.#ships.map(obj => obj.ship.sunk).every(bool => bool);
 	}
 
+	adjacentCoords(coords) {
+		const addVal = 1;
+		const addVectors = [
+			[0, addVal],
+			[addVal, 0],
+			[0, -addVal],
+			[-addVal, 0],
+		];
+
+		return addVectors
+			.map(vector => vector.map((val, i) => val + coords[i]))
+			.filter(vector => this.#withinRange(vector[0], vector[1]));
+	}
+
 	get sunkShips() {
 		return this.#ships.filter(obj => obj.ship.sunk);
 	}

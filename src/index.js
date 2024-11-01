@@ -521,27 +521,62 @@ function allShots() {
 }
 
 const possibleShots = allShots();
-let hunt = true;
 let targetStack = [];
 let difficulty;
 
 function computerPlay() {
+	// shot vary based on difficulty
 	let shot;
+
 	const shotHitUser = shot =>
 		JSON.stringify(user.gameboard.shipCoords).includes(JSON.stringify(shot));
-	const randomShot = () => {
-		const index = Math.floor(Math.random() * possibleShots.length);
-		const shot = possibleShots.splice(index, 1)[0];
+
+	const randomShot = shots => {
+		const index = Math.floor(Math.random() * shots.length);
+		const shot = shots.splice(index, 1)[0];
 		return shot;
 	};
 
 	if (difficulty === "noob") {
-		shot = randomShot();
+		shot = randomShot(possibleShots);
 	} else if (difficulty === "easy") {
-		if (hunt) {
-			shot = randomShot();
-			if (shotHitUser()) {
-			}
+		// if target stack empty, shoot randomly
+		if (targetStack.length === 0) {
+			shot = randomShot(possibleShots);
+		} else {
+			// if target stack not empty take random coordinate from stack
+			shot = randomShot(targetStack);
+
+			// remove shot coordinates from all possible shots
+			possibleShots.forEach((coords, i) => {
+				if (coords[0] === shot[0] && coords[1] === shot[1]) {
+					possibleShots.splice(i, 1);
+				}
+			});
+		}
+
+		// if shot hit, add adjacent (N, S, W, E) coords
+		if (shotHitUser(shot)) {
+			const adjacentCoords = user.gameboard.adjacentCoords(shot);
+
+			// if coords already visited, do not add them
+			const toBeAdded = adjacentCoords.filter(
+				coords =>
+					!JSON.stringify(user.gameboard.shots).includes(
+						JSON.stringify(coords),
+					),
+			);
+
+			toBeAdded.forEach(coords => {
+				// add coords to stack only if stack do not have them yet
+				const test = !JSON.stringify(targetStack).includes(
+					JSON.stringify(coords),
+				);
+
+				if (test) {
+					targetStack.push(coords);
+				}
+			});
 		}
 	}
 
