@@ -198,7 +198,7 @@ playerGridContainer.addEventListener(
 		}
 		updateShipPosition(ship);
 
-		//
+		// so shakeship won't run on drop event
 		dropped = true;
 	},
 	{ signal },
@@ -256,9 +256,12 @@ playerShips.forEach(ship => {
 	ship.addEventListener(
 		"dragend",
 		e => {
+			// dragend comes after drop event; if event is drop, dropped is true, if not dropped is false
 			if (!dropped) {
 				shakeShip(e.target);
 			}
+
+			// reset dropped to false
 			dropped = false;
 		},
 		{ signal },
@@ -414,23 +417,31 @@ document.querySelectorAll(".difficulty").forEach(button => {
 			});
 		};
 
+		// hide all difficulty buttons
 		document
 			.querySelectorAll(".difficulty")
 			.forEach(button => button.classList.add("hidden"));
+
+		// reveal restart button
 		document.getElementById("restart").classList.remove("hidden");
-		//assign the difficulty of the current game
+
 		difficulty = e.target.textContent.toLowerCase();
+
 		//reset user gameboard object and assign new positions
 		user.resetGameboard();
 		updatePlayerGameboard();
+
 		//freeze ships from moving
 		removeShipsDrag();
+
 		// removes event listeners
 		controller.abort();
+
 		// make squares hoverable
 		squares.forEach(square => {
 			square.classList.add("hover:bg-neon-blue", "cursor-crosshair");
 		});
+
 		//make squares clickable
 		squares.forEach(square => {
 			square.addEventListener("click", userShoot, { once: true });
@@ -438,6 +449,7 @@ document.querySelectorAll(".difficulty").forEach(button => {
 	});
 });
 
+// restart is just reloading the page
 document
 	.getElementById("restart")
 	.addEventListener("click", () => location.reload());
@@ -445,11 +457,13 @@ document
 function userShoot(e) {
 	const shootCoords = strToCoords(e.target.dataset.coords);
 	const shipCoords = computer.gameboard.shipCoords;
+
 	const isHit = JSON.stringify(shipCoords).includes(
 		JSON.stringify(shootCoords),
 	);
 
 	computer.gameboard.receiveAttack(shootCoords);
+
 	e.target.classList.remove("bg-dark-blue");
 
 	if (isHit) {
@@ -515,25 +529,35 @@ function computerPlay() {
 	let shot;
 	const shotHitUser = shot =>
 		JSON.stringify(user.gameboard.shipCoords).includes(JSON.stringify(shot));
+	const randomShot = () => {
+		const index = Math.floor(Math.random() * possibleShots.length);
+		const shot = possibleShots.splice(index, 1)[0];
+		return shot;
+	};
 
 	if (difficulty === "noob") {
 		shot = randomShot();
 	} else if (difficulty === "easy") {
 		if (hunt) {
 			shot = randomShot();
-			if (isHit) {
+			if (shotHitUser()) {
 			}
 		}
 	}
 
 	const coordStr = shot.join(",");
-	const squares = [...document.getElementById("user").childNodes];
-	const square = squares.find(square => square.dataset.coords === coordStr);
+
+	// find the DOM elem based on the shot coords
+	const userSquares = [...document.getElementById("user").childNodes];
+	const shotSquare = userSquares.find(
+		square => square.dataset.coords === coordStr,
+	);
 
 	user.gameboard.receiveAttack(shot);
-	square.classList.remove("bg-dark-blue");
+
+	shotSquare.classList.remove("bg-dark-blue");
 	if (shotHitUser(shot)) {
-		square.classList.add("bg-neon-pink");
+		shotSquare.classList.add("bg-neon-pink");
 		const ship = user.gameboard.findShip(shot);
 		if (ship.sunk) {
 			playSunk();
@@ -541,7 +565,7 @@ function computerPlay() {
 			playHit();
 		}
 	} else {
-		square.classList.add("bg-neon-blue");
+		shotSquare.classList.add("bg-neon-blue");
 		playMiss();
 	}
 
@@ -554,6 +578,7 @@ function computerPlay() {
 		announce.classList.remove("hidden");
 		playLose();
 
+		// remove event listeners and hoverables after game end
 		const squares = document.getElementById("computer").childNodes;
 		squares.forEach(square => {
 			square.removeEventListener("click", userShoot);
@@ -562,22 +587,19 @@ function computerPlay() {
 	}
 }
 
-function randomShot() {
-	const index = Math.floor(Math.random() * possibleShots.length);
-	const shot = possibleShots.splice(index, 1)[0];
-	return shot;
-}
-
 function reactivateEnemyGrid() {
 	const squares = document.getElementById("computer").childNodes;
+
 	//make all squares hoverable
 	squares.forEach(square => {
 		square.classList.add("hover:bg-neon-blue", "cursor-crosshair");
 	});
+
 	//make all sqauares clickable
 	squares.forEach(square => {
 		square.addEventListener("click", userShoot, { once: true });
 	});
+
 	// remove hoverable and clickable for shot squares
 	const shotSquares = [
 		...document.getElementById("computer").childNodes,
