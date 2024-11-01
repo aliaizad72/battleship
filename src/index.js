@@ -34,11 +34,19 @@ const images = {
 
 const user = new Player("user");
 const computer = new Player("computer");
+
+// grid and respective squares dimensions
 const gridW = 400;
 const squareW = gridW / 10;
+
+// event listener controllers
 const controller = new AbortController();
 const { signal } = controller;
+
+// a global switch to trigger shake on drag but undrop event
 let dropped = false;
+
+// setting up boards and ships
 createBoard(user);
 createBoard(computer);
 user.addShipsRandomly();
@@ -46,17 +54,155 @@ computer.addShipsRandomly();
 addShipsToBoard(user);
 addShipsToBoard(computer);
 
+function createBoard(player) {
+	const prependZeroIfSingleDigit = num => {
+		if (num < 10) {
+			return "0" + num;
+		}
+		return num;
+	};
+
+	const gridContainer = document.createElement("div");
+	gridContainer.className = `relative grid-container`;
+	gridContainer.style.width = `${gridW}px`;
+
+	const grid = document.createElement("div");
+	grid.id = player.name;
+	grid.className = "grid";
+	grid.style.gridTemplateColumns = `repeat(10, ${squareW}px)`;
+	grid.style.gridTemplateRows = `repeat(10, ${squareW}px)`;
+
+	for (let i = 0; i < 100; i++) {
+		const square = document.createElement("div");
+
+		//prepending 0 for numbers 0 to 9 to assign coords to squares
+		square.dataset.coords = `${prependZeroIfSingleDigit(i)}`.split("");
+		square.className = `border-2 bg-dark-blue border-neon-blue square transition`;
+
+		// to avoid border overlapping
+		if (i % 10 !== 0) {
+			square.classList.add("border-l-0");
+		}
+
+		if (100 - i > 10) {
+			square.classList.add("border-b-0");
+		}
+
+		grid.appendChild(square);
+	}
+
+	const gridTag = document.createElement("p");
+	const tag = player.name === "user" ? "YOU" : "COMPUTER";
+	gridTag.textContent = `${tag}`;
+	gridTag.className = "text-neon-blue pixelify-sans text-xl text-center my-2";
+
+	gridContainer.appendChild(grid);
+	gridContainer.appendChild(gridTag);
+
+	document.getElementById("grids").appendChild(gridContainer);
+}
+
 function addShipsToBoard(player) {
+	const createShip = (player, obj, i) => {
+		const ship = document.createElement("img");
+
+		ship.className = `absolute ship ${player.name}-ships`;
+
+		// set attributes from gameboard / ship objects in the DOM to refer to it easier later on
+		ship.dataset.name = obj.ship.name;
+		ship.dataset.horizontal = obj.ship.horizontal;
+		ship.dataset.length = obj.ship.length;
+		ship.dataset.start = obj.coords[0];
+		ship.dataset.end = obj.coords[obj.ship.length - 1];
+		ship.id = `${player.name}-ship-${i}`;
+
+		// assign images and height / width according to their ship direction
+		if (obj.ship.horizontal) {
+			ship.src = images[obj.ship.name];
+			ship.style.height = `${squareW}px`;
+			ship.style.width = `${obj.ship.length * squareW}px`;
+		} else {
+			ship.src = images[obj.ship.name + "90"];
+			ship.style.width = `${squareW}px`;
+			ship.style.height = `${obj.ship.length * squareW}px`;
+		}
+
+		// absolute positioning based on their start row and column
+		const [r, c] = obj.coords[0];
+		ship.style.left = `${c * squareW}px`;
+		ship.style.top = `${r * squareW}px`;
+
+		// set the origin to the center of the first square for rotation
+		ship.style.transformOrigin = `${squareW / 2}px ${squareW / 2}px`;
+
+		// allow drag if users ship
+		if (player.name == "user") {
+			ship.draggable = true;
+			ship.classList.add("hover:cursor-move");
+		} else {
+			// hide ship if computers ship
+			ship.style.zIndex = "-1";
+		}
+
+		document.getElementById(player.name).parentElement.appendChild(ship);
+	};
+
 	player.gameboard.ships.forEach((obj, i) => {
 		createShip(player, obj, i);
 	});
 }
 
 const playerGridContainer = document.getElementById(`${user.name}`);
+
+// prevent default on dragover to allow drop events on container
 playerGridContainer.addEventListener("dragover", e => e.preventDefault(), {
 	signal,
 });
-playerGridContainer.addEventListener("drop", e => gridDrop(e), { signal });
+
+playerGridContainer.addEventListener(
+	"drop",
+	e => {
+		e.preventDefault();
+
+		// startSquare are coords passed by dragstart
+		const startSquare = e.dataTransfer.getData("startSquare");
+
+		// endSquare are coords where mouse pointer was last when drop happened
+		const endSquare = document
+			.elementsFromPoint(e.clientX, e.clientY)
+			.find(e => e.classList.contains("square")).dataset.coords;
+
+		// "r2, c2" => [r2, c2]
+		const [r1, c1] = strToCoords(startSquare);
+		const [r2, c2] = strToCoords(endSquare);
+
+		// get ship that was dragged
+		const ship = document.getElementById(e.dataTransfer.getData("draggable"));
+
+		// x, y coordinates before the current translation happens
+		const { x, y } = translatedCoords(ship);
+
+		// find row and column distance between start and end drag/drop process
+		const [dr, dc] = [r2 - r1, c2 - c1];
+
+		// apply translation to ship base on their distance and current translated position
+		ship.style.transform = `translate(${x + dc * squareW}px, ${
+			y + dr * squareW
+		}px)`;
+
+		// move back ship to original position if move invalid
+		if (shipOutOfBounds(ship) || isOverlapped(ship)) {
+			ship.style.transform = `translate(${x}px, ${y}px)`;
+			shakeShip(ship);
+			return;
+		}
+		updateShipPosition(ship);
+
+		//
+		dropped = true;
+	},
+	{ signal },
+);
 
 const playerShips = document.querySelectorAll(`.${user.name}-ships`);
 playerShips.forEach(ship => {
@@ -64,13 +210,48 @@ playerShips.forEach(ship => {
 		"dragstart",
 		e => {
 			e.dataTransfer.setData("draggable", e.target.id);
-			e.dataTransfer.setData("startSquare", getSquareFromDrag(e));
+
+			// pass the square coords e.g 0, 0 as startSquare
+			e.dataTransfer.setData(
+				"startSquare",
+				document
+					.elementsFromPoint(e.clientX, e.clientY)
+					.find(e => e.classList.contains("square")).dataset.coords,
+			);
 		},
 		{ signal },
 	);
 
 	// rotate ship when double click
-	ship.addEventListener("dblclick", e => rotateShip(e), { signal });
+	ship.addEventListener(
+		"dblclick",
+		e => {
+			const changeAxis = ship => {
+				if (ship.dataset.horizontal == "true") {
+					ship.src = images[ship.dataset.name + "90"];
+					ship.style.width = `${squareW}px`;
+					ship.style.height = `${ship.dataset.length * squareW}px`;
+					ship.dataset.horizontal = "false";
+				} else {
+					ship.src = images[ship.dataset.name];
+					ship.style.height = `${squareW}px`;
+					ship.style.width = `${ship.dataset.length * squareW}px`;
+					ship.dataset.horizontal = "true";
+				}
+			};
+
+			const ship = e.target;
+			changeAxis(ship);
+
+			if (shipOutOfBounds(ship) || isOverlapped(ship)) {
+				changeAxis(ship);
+				shakeShip(ship);
+				return;
+			}
+			updateShipPosition(ship);
+		},
+		{ signal },
+	);
 
 	ship.addEventListener(
 		"dragend",
@@ -84,102 +265,21 @@ playerShips.forEach(ship => {
 	);
 });
 
-function rotateShip(e) {
-	const ship = e.target;
-	changeAxis(ship);
-
-	const shipPos = ship.getBoundingClientRect();
-	const gridRect = ship.parentElement.getBoundingClientRect();
-	const outOfBounds =
-		shipPos.left < gridRect.left ||
-		shipPos.right > gridRect.right + 1 ||
-		shipPos.top < gridRect.top ||
-		shipPos.bottom > gridRect.bottom;
-	if (outOfBounds || isOverlapped(ship)) {
-		changeAxis(ship);
-		shakeShip(ship);
-		return;
-	}
-	updateShipPosition(ship);
-}
-
-//create gameboard element and assign an id of player
-// w and h of each grid squares = 45px
-function createBoard(player) {
-	const gridContainer = document.createElement("div");
-	gridContainer.className = `relative grid-container`;
-	gridContainer.style.width = `${gridW}px`;
-
-	const grid = document.createElement("div");
-	grid.id = player.name;
-	grid.className = "grid";
-	grid.style.gridTemplateColumns = `repeat(10, ${squareW}px)`;
-	grid.style.gridTemplateRows = `repeat(10, ${squareW}px)`;
-
-	for (let i = 0; i < 100; i++) {
-		const square = document.createElement("div");
-		square.dataset.coords = `${prependZeroIfSingleDigit(i)}`.split("");
-		square.className = `border-2 bg-dark-blue border-neon-blue square transition`;
-
-		if (i % 10 !== 0) {
-			square.classList.add("border-l-0");
-		}
-
-		if (100 - i > 10) {
-			square.classList.add("border-b-0");
-		}
-
-		grid.appendChild(square);
-	}
-
-	gridContainer.appendChild(grid);
-
-	const gridTag = document.createElement("p");
-	const tag = player.name === "user" ? "YOU" : "COMPUTER";
-	gridTag.textContent = `${tag}`;
-	gridTag.className = "text-neon-blue pixelify-sans text-xl text-center my-2";
-	gridContainer.appendChild(gridTag);
-
-	document.getElementById("grids").appendChild(gridContainer);
-}
-
-function gridDrop(e) {
-	e.preventDefault();
-	//find the beginning and end square to find the distance
-	const startSquare = e.dataTransfer.getData("startSquare");
-	const endSquare = getSquareFromDrag(e);
-	const d = distance(startSquare, endSquare);
-
-	//get ship element that was dragged
-	const ship = document.getElementById(e.dataTransfer.getData("draggable"));
-
-	//in case move invalid, get coordinates to translate back to earlier pos
-	const { x, y } = getCoords(ship);
-
-	translateShip(ship, d);
-
-	// find abs position of ship after translation
-	const shipPos = ship.getBoundingClientRect();
+function shipOutOfBounds(ship) {
+	const shipRect = ship.getBoundingClientRect();
 	const gridRect = ship.parentElement.getBoundingClientRect();
 
-	const outOfBounds =
-		shipPos.left < gridRect.left ||
+	return (
+		shipRect.left < gridRect.left ||
 		// +1 to offset weird pixelation of ships length 3
-		shipPos.right > gridRect.right + 1 ||
-		shipPos.top < gridRect.top ||
-		shipPos.bottom > gridRect.bottom;
-	// move back ship to original position if move invalid
-	if (outOfBounds || isOverlapped(ship)) {
-		ship.style.transform = `translate(${x}px, ${y}px)`;
-		shakeShip(ship);
-		return;
-	}
-	updateShipPosition(ship);
-	dropped = true;
+		shipRect.right > gridRect.right + 1 ||
+		shipRect.top < gridRect.top ||
+		shipRect.bottom > gridRect.bottom
+	);
 }
 
 function shakeShip(ship) {
-	const { x, y } = getCoords(ship);
+	const { x, y } = translatedCoords(ship);
 	if (ship.dataset.horizontal === "true") {
 		ship.animate(
 			[
@@ -213,24 +313,12 @@ function shakeShip(ship) {
 	}
 }
 
-//this function returns the square element where the pointer was when drag event ends
-function getSquareFromDrag(e) {
-	return document
-		.elementsFromPoint(e.clientX, e.clientY)
-		.find(e => e.classList.contains("square")).dataset.coords;
-}
-
-function distance(startSquare, endSquare) {
-	const [r1, c1] = strToCoords(startSquare);
-	const [r2, c2] = strToCoords(endSquare);
-	return [r2 - r1, c2 - c1];
-}
-
+// "0, 0" => [0, 0]
 function strToCoords(str) {
 	return str.split(",").map(coord => Number(coord));
 }
 
-function getCoords(element) {
+function translatedCoords(element) {
 	const style = window.getComputedStyle(element);
 	const matrix = new DOMMatrixReadOnly(style.transform);
 	return {
@@ -239,163 +327,120 @@ function getCoords(element) {
 	};
 }
 
-function translateShip(ship, distance) {
-	const shipPos = getCoords(ship);
-	const [dr, dc] = distance;
-	ship.style.transform = `translate(${shipPos.x + dc * squareW}px, ${
-		shipPos.y + dr * squareW
-	}px)`;
-}
-
+// function to check if a ship overlapped with another ship
 function isOverlapped(ship) {
-	const { width, height, left, top } = ship.getBoundingClientRect();
-	const colCount = width / squareW;
-	const rowCount = height / squareW;
-	const midX = left + squareW / 2;
-	const midY = top + squareW / 2;
-	const result = [];
+	const horizontal = ship.dataset.horizontal;
+	const startCoords = strToCoords(ship.dataset.start);
+	const endCoords = strToCoords(ship.dataset.end);
+	const c = endCoords[1] - startCoords[1] + 1;
+	const r = endCoords[0] - startCoords[0] + 1;
 
+	// find the x, y window coordinates of the center of the first ship square
+	const { left, top } = ship.getBoundingClientRect();
+	const x = left + squareW / 2;
+	const y = top + squareW / 2;
+
+	// if the x, y window coordinates contains 2 ships, then it is overlapped
 	const checkOverlap = (x, y) =>
 		document.elementsFromPoint(x, y).filter(e => e.classList.contains("ship"))
 			.length === 2;
 
-	if (rowCount === 1) {
-		for (let i = 0; i < colCount; i++) {
-			result.push(checkOverlap(midX + 40 * i, midY));
+	// iterate through every center point of squares along their span, according to their direction, if overlap return true immediately
+	if (horizontal === "true") {
+		for (let i = 0; i < c; i++) {
+			if (checkOverlap(x + squareW * i, y)) {
+				return true;
+			}
 		}
-	} else if (colCount === 1) {
-		for (let i = 0; i < rowCount; i++) {
-			result.push(checkOverlap(midX, midY + 40 * i));
+	} else if (horizontal === "false") {
+		for (let i = 0; i < r; i++) {
+			if (checkOverlap(x, y + squareW * i)) {
+				return true;
+			}
 		}
 	}
 
-	return result.includes(true);
+	// if nothing returns true, then it is not overlapped
+	return false;
 }
 
+// update dataset attributes of ship to current coords
 function updateShipPosition(ship) {
 	const { left, top } = ship.getBoundingClientRect();
-	const x1 = left + squareW / 2;
-	const y1 = top + squareW / 2;
-	const start = document
-		.elementsFromPoint(x1, y1)
+
+	// find x, y of center of first square the ship is on
+	const x = left + squareW / 2;
+	const y = top + squareW / 2;
+
+	const startSquare = document
+		.elementsFromPoint(x, y)
 		.find(e => e.classList.contains("square")).dataset.coords;
-	const numStart = strToCoords(start);
+	const startCoords = strToCoords(startSquare);
+
+	// find the span of the ship excluding the first square
 	const toAdd = Number(ship.dataset.length) - 1;
+
+	// add span to startCoords row or column based on their direction to find the end square
 	if (ship.dataset.horizontal == "true") {
-		ship.dataset.start = start;
-		ship.dataset.end = `${numStart[0]}, ${numStart[1] + toAdd}`;
+		ship.dataset.start = startSquare;
+		ship.dataset.end = `${startCoords[0]}, ${startCoords[1] + toAdd}`;
 	} else {
-		ship.dataset.start = start;
-		ship.dataset.end = `${numStart[0] + toAdd}, ${numStart[1]}`;
+		ship.dataset.start = startSquare;
+		ship.dataset.end = `${startCoords[0] + toAdd}, ${startCoords[1]}`;
 	}
 }
 
-function prependZeroIfSingleDigit(num) {
-	if (num < 10) {
-		return "0" + num;
-	}
-	return num;
-}
-
-function createShip(player, obj, i) {
-	const ship = document.createElement("img");
-	const [r, c] = obj.coords[0];
-
-	ship.className = `absolute ship ${player.name}-ships`;
-	ship.dataset.name = obj.ship.name;
-	ship.dataset.horizontal = obj.ship.horizontal;
-	ship.dataset.length = obj.ship.length;
-	ship.dataset.start = obj.coords[0];
-	ship.dataset.end = obj.coords[obj.ship.length - 1];
-
-	if (obj.ship.horizontal) {
-		ship.src = images[obj.ship.name];
-		ship.style.height = `${squareW}px`;
-		ship.style.width = `${obj.ship.length * squareW}px`;
-	} else {
-		ship.src = images[obj.ship.name + "90"];
-		ship.style.width = `${squareW}px`;
-		ship.style.height = `${obj.ship.length * squareW}px`;
-	}
-
-	ship.style.left = `${c * squareW}px`;
-	ship.style.top = `${r * squareW}px`;
-	ship.id = `${player.name}-ship-${i}`;
-	ship.style.transformOrigin = `${squareW / 2}px ${squareW / 2}px`;
-	if (player.name == "user") {
-		ship.draggable = true;
-		ship.classList.add("hover:cursor-move");
-	} else {
-		ship.style.zIndex = "-1";
-	}
-
-	document.getElementById(player.name).parentElement.appendChild(ship);
-}
-
-function changeAxis(ship) {
-	if (ship.dataset.horizontal == "true") {
-		ship.src = images[ship.dataset.name + "90"];
-		ship.style.width = `${squareW}px`;
-		ship.style.height = `${ship.dataset.length * squareW}px`;
-		ship.dataset.horizontal = "false";
-	} else {
-		ship.src = images[ship.dataset.name];
-		ship.style.height = `${squareW}px`;
-		ship.style.width = `${ship.dataset.length * squareW}px`;
-		ship.dataset.horizontal = "true";
-	}
-}
-
-function updatePlayerGameboard() {
-	const ships = document.querySelectorAll(`.user-ships`);
-	ships.forEach(ship => {
-		const newShip = new Ship(ship.dataset.name, Number(ship.dataset.length));
-		const startCoords = strToCoords(ship.dataset.start);
-		const endCoords = strToCoords(ship.dataset.end);
-		user.gameboard.addShip(newShip, startCoords, endCoords);
-	});
-}
-
-function removeShipsDrag() {
-	const ships = document.querySelectorAll(`.user-ships`);
-	ships.forEach(ship => {
-		ship.classList.remove("hover:cursor-move");
-		ship.draggable = false;
-	});
-}
 document.querySelectorAll(".difficulty").forEach(button => {
 	button.addEventListener("click", e => {
+		const ships = document.querySelectorAll(`.user-ships`);
+		const squares = document.getElementById("computer").childNodes;
+
+		const updatePlayerGameboard = () => {
+			ships.forEach(ship => {
+				const newShip = new Ship(
+					ship.dataset.name,
+					Number(ship.dataset.length),
+				);
+				const startCoords = strToCoords(ship.dataset.start);
+				const endCoords = strToCoords(ship.dataset.end);
+				user.gameboard.addShip(newShip, startCoords, endCoords);
+			});
+		};
+
+		const removeShipsDrag = () => {
+			ships.forEach(ship => {
+				ship.classList.remove("hover:cursor-move");
+				ship.draggable = false;
+			});
+		};
+
 		document
 			.querySelectorAll(".difficulty")
 			.forEach(button => button.classList.add("hidden"));
 		document.getElementById("restart").classList.remove("hidden");
+		//assign the difficulty of the current game
+		difficulty = e.target.textContent.toLowerCase();
+		//reset user gameboard object and assign new positions
 		user.resetGameboard();
 		updatePlayerGameboard();
+		//freeze ships from moving
 		removeShipsDrag();
 		// removes event listeners
 		controller.abort();
-		makeEnemyGridHoverable();
-		makeEnemyGridClickable();
+		// make squares hoverable
+		squares.forEach(square => {
+			square.classList.add("hover:bg-neon-blue", "cursor-crosshair");
+		});
+		//make squares clickable
+		squares.forEach(square => {
+			square.addEventListener("click", userShoot, { once: true });
+		});
 	});
 });
 
 document
 	.getElementById("restart")
 	.addEventListener("click", () => location.reload());
-
-function makeEnemyGridHoverable() {
-	const squares = document.getElementById("computer").childNodes;
-	squares.forEach(square => {
-		square.classList.add("hover:bg-neon-blue", "cursor-crosshair");
-	});
-}
-
-function makeEnemyGridClickable() {
-	const squares = document.getElementById("computer").childNodes;
-	squares.forEach(square => {
-		square.addEventListener("click", userShoot, { once: true });
-	});
-}
 
 function userShoot(e) {
 	const shootCoords = strToCoords(e.target.dataset.coords);
@@ -464,13 +509,22 @@ function allShots() {
 const possibleShots = allShots();
 let hunt = true;
 let targetStack = [];
-let mode;
+let difficulty;
 
 function computerPlay() {
-	const shot = randomShot();
-	const isHit = JSON.stringify(user.gameboard.shipCoords).includes(
-		JSON.stringify(shot),
-	);
+	let shot;
+	const shotHitUser = shot =>
+		JSON.stringify(user.gameboard.shipCoords).includes(JSON.stringify(shot));
+
+	if (difficulty === "noob") {
+		shot = randomShot();
+	} else if (difficulty === "easy") {
+		if (hunt) {
+			shot = randomShot();
+			if (isHit) {
+			}
+		}
+	}
 
 	const coordStr = shot.join(",");
 	const squares = [...document.getElementById("user").childNodes];
@@ -478,7 +532,7 @@ function computerPlay() {
 
 	user.gameboard.receiveAttack(shot);
 	square.classList.remove("bg-dark-blue");
-	if (isHit) {
+	if (shotHitUser(shot)) {
 		square.classList.add("bg-neon-pink");
 		const ship = user.gameboard.findShip(shot);
 		if (ship.sunk) {
@@ -515,8 +569,16 @@ function randomShot() {
 }
 
 function reactivateEnemyGrid() {
-	makeEnemyGridHoverable();
-	makeEnemyGridClickable();
+	const squares = document.getElementById("computer").childNodes;
+	//make all squares hoverable
+	squares.forEach(square => {
+		square.classList.add("hover:bg-neon-blue", "cursor-crosshair");
+	});
+	//make all sqauares clickable
+	squares.forEach(square => {
+		square.addEventListener("click", userShoot, { once: true });
+	});
+	// remove hoverable and clickable for shot squares
 	const shotSquares = [
 		...document.getElementById("computer").childNodes,
 	].filter(square => !square.classList.contains("bg-dark-blue"));
