@@ -1,6 +1,7 @@
 export default class Gameboard {
 	#ships = [];
 	#shots = [];
+	#probabilityMap = {};
 
 	#endCoords(ship, startR, startC) {
 		const coords = [startR, startC];
@@ -96,6 +97,75 @@ export default class Gameboard {
 		}
 
 		return path;
+	}
+
+	#horizontalEnd(ship, startCoords) {
+		return [startCoords[0], startCoords[1] + ship.length - 1];
+	}
+
+	#verticalEnd(ship, startCoords) {
+		return [startCoords[0] + ship.length - 1, startCoords[1]];
+	}
+
+	#allCoords() {
+		const coords = [];
+		for (let i = 0; i < 10; i++) {
+			for (let j = 0; j < 10; j++) {
+				coords.push([i, j]);
+			}
+		}
+		return coords;
+	}
+
+	#horizontalStartEnd(ship) {
+		return this.#allCoords()
+			.map(coords => {
+				const end = this.#horizontalEnd(ship, coords);
+				if (this.#withinRange(end[0], end[1])) {
+					return {
+						start: coords,
+						end,
+					};
+				}
+			})
+			.filter(obj => obj);
+	}
+
+	#verticalStartEnd(ship) {
+		return this.#allCoords()
+			.map(coords => {
+				const end = this.#verticalEnd(ship, coords);
+				if (this.#withinRange(end[0], end[1])) {
+					return {
+						start: coords,
+						end,
+					};
+				}
+			})
+			.filter(obj => obj);
+	}
+
+	#allHorizontalPaths(ship) {
+		return this.#horizontalStartEnd(ship).map(obj =>
+			this.#coordsPath(obj.start, obj.end),
+		);
+	}
+
+	#allVerticalPaths(ship) {
+		return this.#verticalStartEnd(ship).map(obj =>
+			this.#coordsPath(obj.start, obj.end),
+		);
+	}
+
+	calculateDensity() {
+		this.activeShips.forEach(ship => {
+			const horizontal = this.#allHorizontalPaths(ship);
+			const vertical = this.#allVerticalPaths(ship);
+		});
+	}
+
+	get activeShips() {
+		return this.#ships.map(obj => obj.ship).filter(ship => !ship.sunk);
 	}
 
 	findShip(coords) {
