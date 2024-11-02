@@ -10,7 +10,21 @@ algoBoard.addShip(new Ship("battleship", 4), [6, 0], [9, 0]);
 algoBoard.addShip(new Ship("cruiser", 3), [3, 4], [5, 4]);
 algoBoard.addShip(new Ship("submarine", 3), [2, 3], [2, 5]);
 algoBoard.addShip(new Ship("destroyer", 2), [7, 8], [7, 9]);
-algoBoard.calculateDensity();
+
+console.log(algoBoard.calculateDensity());
+
+algoBoard.receiveAttack([7, 7]);
+
+console.log(algoBoard.calculateDensity());
+
+algoBoard.receiveAttack([7, 8]);
+algoBoard.receiveAttack([7, 9]);
+
+console.log(algoBoard.calculateDensity());
+
+algoBoard.receiveAttack([2, 3]);
+algoBoard.receiveAttack([2, 4]);
+algoBoard.receiveAttack([2, 5]);
 
 test("addShip will add to the grid array an object of ship and coords occupied", () => {
 	gameboard.addShip(submarine, [0, 0], [0, 2]);

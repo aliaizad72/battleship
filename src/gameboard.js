@@ -1,7 +1,6 @@
 export default class Gameboard {
 	#ships = [];
 	#shots = [];
-	#probabilityMap = {};
 
 	#endCoords(ship, startR, startC) {
 		const coords = [startR, startC];
@@ -157,11 +156,48 @@ export default class Gameboard {
 		);
 	}
 
-	calculateDensity() {
-		this.activeShips.forEach(ship => {
-			const horizontal = this.#allHorizontalPaths(ship);
-			const vertical = this.#allVerticalPaths(ship);
+	#filterMissedShots(paths) {
+		return paths.filter(path => {
+			return !path.some(coords => this.#coordsInArray(this.missed, coords));
 		});
+	}
+
+	#filterSunkedShips(paths) {
+		return paths.filter(path => {
+			return !path.some(coords =>
+				this.#coordsInArray(this.sunkShipsCoords, coords),
+			);
+		});
+	}
+
+	#validPaths(path) {
+		return this.#filterSunkedShips(this.#filterMissedShots(path));
+	}
+
+	get sunkShipsCoords() {
+		return this.sunkShips.map(obj => obj.coords).flat(1);
+	}
+
+	calculateDensity() {
+		const map = {};
+
+		this.activeShips.forEach(ship => {
+			const horizontal = this.#validPaths(this.#allHorizontalPaths(ship));
+			const vertical = this.#validPaths(this.#allVerticalPaths(ship));
+			[horizontal, vertical].forEach(direction => {
+				direction.forEach(path => {
+					path.forEach(coords => {
+						if (map[coords]) {
+							map[coords] += 1;
+						} else {
+							map[coords] = 1;
+						}
+					});
+				});
+			});
+		});
+
+		return map;
 	}
 
 	get activeShips() {
@@ -260,6 +296,12 @@ export default class Gameboard {
 	get missed() {
 		return this.#shots.filter(shot => {
 			return !this.#coordsInArray(this.#occupiedCoords(), shot);
+		});
+	}
+
+	get hits() {
+		return this.#shots.filter(shot => {
+			return this.#coordsInArray(this.#occupiedCoords(), shot);
 		});
 	}
 }
