@@ -170,6 +170,14 @@ export default class Gameboard {
 		});
 	}
 
+	#targetPaths(paths) {
+		return paths.filter(path => {
+			return path.some(coords =>
+				this.#coordsInArray(this.hitsOnActiveShips, coords),
+			);
+		});
+	}
+
 	#validPaths(path) {
 		return this.#filterSunkedShips(this.#filterMissedShots(path));
 	}
@@ -182,8 +190,17 @@ export default class Gameboard {
 		const map = {};
 
 		this.activeShips.forEach(ship => {
-			const horizontal = this.#validPaths(this.#allHorizontalPaths(ship));
-			const vertical = this.#validPaths(this.#allVerticalPaths(ship));
+			let horizontal = this.#allHorizontalPaths(ship);
+			let vertical = this.#allVerticalPaths(ship);
+
+			if (this.hitsOnActiveShips.length === 1) {
+				horizontal = this.#targetPaths(horizontal);
+				vertical = this.#targetPaths(vertical);
+			}
+
+			horizontal = this.#validPaths(horizontal);
+			vertical = this.#validPaths(vertical);
+
 			[horizontal, vertical].forEach(direction => {
 				direction.forEach(path => {
 					path.forEach(coords => {
@@ -191,6 +208,10 @@ export default class Gameboard {
 							map[coords] += 1;
 						} else {
 							map[coords] = 1;
+						}
+
+						if (this.#alreadyShot(coords)) {
+							map[coords] = 0;
 						}
 					});
 				});
@@ -200,8 +221,32 @@ export default class Gameboard {
 		return map;
 	}
 
+	#alreadyShot(coords) {
+		return this.#coordsInArray(this.hitsOnActiveShips, coords);
+	}
+
+	mostProbableShot() {
+		const map = this.calculateDensity();
+		const max = Math.max(...Object.values(map));
+		const shots = [];
+		for (const coords in map) {
+			if (map[coords] === max) {
+				shots.push(coords.split(",").map(Number));
+			}
+		}
+		const random = Math.floor(Math.random() * shots.length);
+
+		return shots[random];
+	}
+
 	get activeShips() {
 		return this.#ships.map(obj => obj.ship).filter(ship => !ship.sunk);
+	}
+
+	get hitsOnActiveShips() {
+		return this.hits.filter(hit => {
+			return !this.#coordsInArray(this.sunkShips, hit);
+		});
 	}
 
 	findShip(coords) {
