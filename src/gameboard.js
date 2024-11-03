@@ -193,7 +193,7 @@ export default class Gameboard {
 			let horizontal = this.#allHorizontalPaths(ship);
 			let vertical = this.#allVerticalPaths(ship);
 
-			if (this.hitsOnActiveShips.length === 1) {
+			if (this.hitsOnActiveShips.length > 0) {
 				horizontal = this.#targetPaths(horizontal);
 				vertical = this.#targetPaths(vertical);
 			}

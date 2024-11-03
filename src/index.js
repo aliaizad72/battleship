@@ -551,23 +551,31 @@ function computerPlay() {
 		const shot = shots.splice(index, 1)[0];
 		return shot;
 	};
+	// remove shot coordinates from all possible shots
+	const removeShot = (arr, shot) =>
+		arr.forEach((coords, i) => {
+			if (coords[0] === shot[0] && coords[1] === shot[1]) {
+				arr.splice(i, 1);
+			}
+		});
 
 	if (difficulty === "noob") {
 		shot = randomShot(possibleShots);
-	} else if (difficulty === "easier") {
+	} else if (difficulty === "easier" || difficulty === "easy") {
 		// if target stack empty, shoot randomly
 		if (targetStack.length === 0) {
-			shot = randomShot(possibleShots);
+			shot =
+				difficulty === "easier"
+					? randomShot(possibleShots)
+					: randomShot(parityShots);
 		} else {
 			// if target stack not empty take random coordinate from stack
 			shot = randomShot(targetStack);
 
 			// remove shot coordinates from all possible shots
-			possibleShots.forEach((coords, i) => {
-				if (coords[0] === shot[0] && coords[1] === shot[1]) {
-					possibleShots.splice(i, 1);
-				}
-			});
+			difficulty === "easier"
+				? removeShot(possibleShots, shot)
+				: removeShot(parityShots, shot);
 		}
 
 		// if shot hit, add adjacent (N, S, W, E) coords
@@ -593,45 +601,8 @@ function computerPlay() {
 				}
 			});
 		}
-	} else if (difficulty === "easy") {
-		// if target stack empty, shoot randomly with parity
-		if (targetStack.length === 0) {
-			shot = randomShot(parityShots);
-		} else {
-			// if target stack not empty take random coordinate from stack
-			shot = randomShot(targetStack);
-
-			// remove shot coordinates from all parity shots if exist
-			parityShots.forEach((coords, i) => {
-				if (coords[0] === shot[0] && coords[1] === shot[1]) {
-					parityShots.splice(i, 1);
-				}
-			});
-		}
-
-		// if shot hit, add adjacent (N, S, W, E) coords
-		if (shotHitUser(shot)) {
-			const adjacentCoords = user.gameboard.adjacentCoords(shot);
-
-			// if coords already visited, do not add them
-			const toBeAdded = adjacentCoords.filter(
-				coords =>
-					!JSON.stringify(user.gameboard.shots).includes(
-						JSON.stringify(coords),
-					),
-			);
-
-			toBeAdded.forEach(coords => {
-				// add coords to stack only if stack do not have them yet
-				const test = !JSON.stringify(targetStack).includes(
-					JSON.stringify(coords),
-				);
-
-				if (test) {
-					targetStack.push(coords);
-				}
-			});
-		}
+	} else if (difficulty === "hard") {
+		shot = user.gameboard.mostProbableShot();
 	}
 
 	const coordStr = shot.join(",");
